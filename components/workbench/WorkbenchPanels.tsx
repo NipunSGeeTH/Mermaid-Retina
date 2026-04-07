@@ -1,4 +1,5 @@
-import { Alert, Box, Paper, Typography } from "@mui/material";
+import { useState } from "react";
+import { Alert, Box, Button, Dialog, DialogContent, Paper, Stack, Typography } from "@mui/material";
 import type { WorkbenchPanelsProps } from "@/components/workbench/types";
 
 export default function WorkbenchPanels({
@@ -15,6 +16,25 @@ export default function WorkbenchPanels({
   onCodeChange,
   onStartSplitDrag,
 }: WorkbenchPanelsProps) {
+  const [fullScreenOpen, setFullScreenOpen] = useState(false);
+  const [showFullScreenTopBar, setShowFullScreenTopBar] = useState(true);
+
+  const previewContent = error ? (
+    <Alert severity="error" sx={{ width: "100%", whiteSpace: "pre-wrap" }}>
+      {error}
+    </Alert>
+  ) : (
+    <Box
+      sx={{
+        width: "100%",
+        display: "flex",
+        justifyContent: "center",
+        "& svg": { maxWidth: "100%", height: "auto" },
+      }}
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+
   return (
     <Box
       ref={splitContainerRef}
@@ -102,10 +122,17 @@ export default function WorkbenchPanels({
           }}
         >
           <Box sx={{ px: 1.5, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
-            <Typography variant="subtitle2">Preview</Typography>
-            <Typography variant="caption" color="text.secondary">
-              Real-time render. Drag the middle bar on desktop to resize.
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
+              <Box>
+                <Typography variant="subtitle2">Preview</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Real-time render. Drag the middle bar on desktop to resize.
+                </Typography>
+              </Box>
+              <Button size="small" variant="outlined" onClick={() => setFullScreenOpen(true)}>
+                Full Screen
+              </Button>
+            </Stack>
           </Box>
           <Box
             sx={{
@@ -119,24 +146,61 @@ export default function WorkbenchPanels({
               backgroundSize: "20px 20px",
             }}
           >
-            {error ? (
-              <Alert severity="error" sx={{ width: "100%", whiteSpace: "pre-wrap" }}>
-                {error}
-              </Alert>
-            ) : (
-              <Box
-                sx={{
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  "& svg": { maxWidth: "100%", height: "auto" },
-                }}
-                dangerouslySetInnerHTML={{ __html: svg }}
-              />
-            )}
+            {previewContent}
           </Box>
         </Paper>
       ) : null}
+
+      <Dialog open={fullScreenOpen} onClose={() => setFullScreenOpen(false)} fullScreen>
+        <Box
+          sx={{ position: "relative", height: "100%", width: "100%" }}
+          onMouseMove={(event) => {
+            setShowFullScreenTopBar(event.clientY <= 88);
+          }}
+          onMouseLeave={() => setShowFullScreenTopBar(false)}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 2,
+              p: 1.5,
+              opacity: showFullScreenTopBar ? 1 : 0,
+              transform: showFullScreenTopBar ? "translateY(0)" : "translateY(-8px)",
+              transition: "opacity 180ms ease, transform 180ms ease",
+              pointerEvents: showFullScreenTopBar ? "auto" : "none",
+              background:
+                "linear-gradient(180deg, rgba(15,23,42,0.7) 0%, rgba(15,23,42,0.2) 60%, rgba(15,23,42,0) 100%)",
+            }}
+          >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="h6" color="common.white">
+                Graph Preview
+              </Typography>
+              <Button onClick={() => setFullScreenOpen(false)} variant="contained" size="small">
+                Close
+              </Button>
+            </Stack>
+          </Box>
+
+          <DialogContent
+            sx={{
+              p: 2,
+              height: "100%",
+              background: previewBackground,
+              backgroundSize: "20px 20px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: error ? "flex-start" : "center",
+              overflow: "auto",
+            }}
+          >
+            {previewContent}
+          </DialogContent>
+        </Box>
+      </Dialog>
     </Box>
   );
 }
