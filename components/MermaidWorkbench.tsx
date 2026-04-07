@@ -14,7 +14,6 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
-import * as resvg from "@resvg/resvg-wasm";
 
 const DEFAULT_CODE = `graph TD
   A[Start] --> B{Is it working?}
@@ -30,38 +29,11 @@ export default function MermaidWorkbench() {
   const [scale, setScale] = useState<number>(2);
   const [svg, setSvg] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const [wasmReady, setWasmReady] = useState<boolean>(false);
   const renderTokenRef = useRef<number>(0);
 
   useEffect(() => {
     mermaid.initialize({ startOnLoad: false, theme });
   }, [theme]);
-
-  useEffect(() => {
-    let active = true;
-
-    const init = async () => {
-      try {
-        await resvg.initWasm(
-          fetch("https://cdn.jsdelivr.net/npm/@resvg/resvg-wasm@2.4.1/index_bg.wasm")
-        );
-        if (active) {
-          setWasmReady(true);
-        }
-      } catch (wasmError) {
-        console.error("WASM init failed", wasmError);
-        if (active) {
-          setWasmReady(false);
-        }
-      }
-    };
-
-    void init();
-
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -101,27 +73,50 @@ export default function MermaidWorkbench() {
     return () => clearTimeout(timer);
   }, [code, theme]);
 
-  const exportDisabled = useMemo<boolean>(() => !svg || !wasmReady, [svg, wasmReady]);
+  const exportDisabled = useMemo<boolean>(() => !svg, [svg]);
 
-  const handleExport = () => {
-    if (!wasmReady || !svg) {
+  const handleExport = async () => {
+    if (!svg) {
       return;
     }
+    try {
+      const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      let image: HTMLImageElement;
+      try {
+        image = await loadSvgImage(svgUrl);
+      } finally {
+        URL.revokeObjectURL(svgUrl);
+      }
 
-    const renderer = new resvg.Resvg(svg, {
-      fitTo: { mode: "zoom", value: scale },
-    });
+      const canvas = document.createElement("canvas");
+      const width = Math.max(1, Math.round(image.width * scale));
+      const height = Math.max(1, Math.round(image.height * scale));
 
-    const png = renderer.render().asPng();
-    const blob = new Blob([Uint8Array.from(png)], { type: "image/png" });
-    const url = URL.createObjectURL(blob);
+      canvas.width = width;
+      canvas.height = height;
 
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `diagram-${scale}x.png`;
-    anchor.click();
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("Canvas context unavailable");
+      }
 
-    URL.revokeObjectURL(url);
+      context.clearRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+
+      const pngBlob = await canvasToPngBlob(canvas);
+      const pngUrl = URL.createObjectURL(pngBlob);
+
+      const anchor = document.createElement("a");
+      anchor.href = pngUrl;
+      anchor.download = `diagram-${scale}x.png`;
+      anchor.click();
+
+      URL.revokeObjectURL(pngUrl);
+    } catch (exportError) {
+      console.error("PNG export failed", exportError);
+      alert("PNG export failed. Please try again.");
+    }
   };
 
   const handleThemeChange = (event: SelectChangeEvent<string>) => {
@@ -245,4 +240,25 @@ export default function MermaidWorkbench() {
       </Box>
     </Box>
   );
+}
+
+function loadSvgImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Failed to load SVG image"));
+    image.src = url;
+  });
+}
+
+function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Failed to create PNG blob"));
+        return;
+      }
+      resolve(blob);
+    }, "image/png");
+  });
 }

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 0.0.0.0 --port 3000",
     "build": "next build",
     "start": "next start"
   },
@@ -11,7 +11,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.4",
-    "@resvg/resvg-wasm": "^2.6.2",
+    "@mui/material-nextjs": "^7.3.9",
     "mermaid": "^11.12.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
