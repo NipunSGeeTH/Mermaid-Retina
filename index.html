@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mermaid Exporter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { display: flex; flex-direction: column; height: 100vh; background: #1e1e1e; color: #ccc; font-family: monospace; }
+    header { padding: 12px 20px; background: #111; display: flex; gap: 12px; align-items: center; }
+    header h1 { font-size: 15px; color: #fff; flex: 1; }
+    select, button { background: #2d2d2d; color: #ccc; border: 1px solid #444; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+    button { background: #5a3fcf; color: #fff; border-color: #5a3fcf; }
+    button:hover { background: #6f52e0; }
+    main { display: flex; flex: 1; overflow: hidden; }
+    #editor { width: 50%; padding: 16px; background: #252526; border-right: 1px solid #333; resize: none; outline: none; color: #d4d4d4; font-size: 14px; line-height: 1.6; }
+    #preview { width: 50%; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 20px; background: #1e1e1e; }
+    #preview svg { max-width: 100%; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mermaid Exporter</h1>
+    <select id="theme">
+      <option value="default">Default</option>
+      <option value="dark">Dark</option>
+      <option value="forest">Forest</option>
+      <option value="neutral">Neutral</option>
+    </select>
+    <select id="scale">
+      <option value="1">1x</option>
+      <option value="2">2x HD</option>
+      <option value="4">4x Ultra</option>
+    </select>
+    <button id="exportBtn">Export PNG</button>
+  </header>
+  <main>
+    <textarea id="editor" spellcheck="false">graph TD
+  A[Start] --> B{Is it working?}
+  B -->|Yes| C[Great!]
+  B -->|No| D[Debug it]
+  D --> A</textarea>
+    <div id="preview"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@resvg/resvg-wasm@2.4.1/index.min.js"></script>
+<script>
+  const editor = document.getElementById('editor');
+  const preview = document.getElementById('preview');
+  const themeSelect = document.getElementById('theme');
+  const scaleSelect = document.getElementById('scale');
+  const exportBtn = document.getElementById('exportBtn');
+
+  // Initialize mermaid
+  mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
+  // Render diagram on every keystroke
+  async function renderDiagram() {
+    const code = editor.value.trim();
+    if (!code) return;
+    try {
+      preview.innerHTML = '';
+      const id = 'mermaid-' + Date.now();
+      const { svg } = await mermaid.render(id, code);
+      preview.innerHTML = svg;
+    } catch (e) {
+      preview.innerHTML = `<pre style="color:#f88;font-size:12px">${e.message}</pre>`;
+    }
+  }
+
+  // Re-render when theme changes
+  themeSelect.addEventListener('change', () => {
+    mermaid.initialize({ startOnLoad: false, theme: themeSelect.value });
+    renderDiagram();
+  });
+
+  // Render on typing (debounced)
+  let debounceTimer;
+  editor.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(renderDiagram, 400);
+  });
+
+  // Init WASM
+  let wasmReady = false;
+  async function initWasm() {
+    await resvg.initWasm(
+      fetch('https://cdn.jsdelivr.net/npm/@resvg/resvg-wasm@2.4.1/index_bg.wasm')
+    );
+    wasmReady = true;
+  }
+
+  // Export function
+  exportBtn.addEventListener('click', async () => {
+    if (!wasmReady) {
+      alert('WASM not ready yet, wait a moment and try again.');
+      return;
+    }
+
+    const svgEl = preview.querySelector('svg');
+    if (!svgEl) {
+      alert('Nothing to export. Write a valid diagram first.');
+      return;
+    }
+
+    const scale = parseInt(scaleSelect.value);
+    const svgString = new XMLSerializer().serializeToString(svgEl);
+
+    const renderer = new resvg.Resvg(svgString, {
+      fitTo: { mode: 'zoom', value: scale }
+    });
+
+    const pngData = renderer.render();
+    const pngBuffer = pngData.asPng();
+
+    const blob = new Blob([pngBuffer], { type: 'image/png' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `diagram-${scale}x.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Start everything
+  initWasm();
+  renderDiagram();
+</script>
+</body>
+</html>
