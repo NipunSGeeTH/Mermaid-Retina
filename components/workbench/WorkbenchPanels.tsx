@@ -97,7 +97,7 @@ export default function WorkbenchPanels({
                 lineHeight: 1.7,
               },
               "& .cm-content": {
-                paddingBlock: 10,
+                paddingBlock: "4px",
               },
               "& .cm-selectionBackground, & .cm-content ::selection": {
                 backgroundColor: "action.selected",
