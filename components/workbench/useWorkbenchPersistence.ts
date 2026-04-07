@@ -9,6 +9,7 @@ import {
   SCALES,
   STORAGE_KEY,
 } from "@/components/workbench/constants";
+import { parseSharedCodeFromHash } from "@/components/workbench/shareUrl";
 import type { PersistParams, PersistedState } from "@/components/workbench/types";
 
 export function useWorkbenchPersistence(params: PersistParams) {
@@ -39,13 +40,17 @@ export function useWorkbenchPersistence(params: PersistParams) {
     }
 
     try {
+      const sharedHashState = parseSharedCodeFromHash(window.location.hash);
+      const hasSharedCodeInUrl = sharedHashState.hasShareCode && sharedHashState.code !== null;
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<PersistedState>;
-        if (typeof parsed.code === "string" && parsed.code.trim()) {
-          setCode(parsed.code);
-        } else {
-          setCode(DIAGRAM_TEMPLATES[0].code);
+        if (!hasSharedCodeInUrl) {
+          if (typeof parsed.code === "string" && parsed.code.trim()) {
+            setCode(parsed.code);
+          } else {
+            setCode(DIAGRAM_TEMPLATES[0].code);
+          }
         }
         if (
           typeof parsed.scale === "number" &&

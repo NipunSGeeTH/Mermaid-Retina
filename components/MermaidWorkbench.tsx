@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -25,6 +26,7 @@ import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
 import { formatMermaidCode } from "@/components/workbench/mermaidFormatter";
+import { buildShareHash, parseSharedCodeFromHash } from "@/components/workbench/shareUrl";
 import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
 import {
   canvasToBlob,
@@ -104,6 +106,29 @@ export default function MermaidWorkbench() {
     }
     setCode(formattedCode);
     showToast("Code formatted", "success");
+  };
+
+  const handleShareLink = async () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const shareHash = buildShareHash(code);
+    if (!shareHash) {
+      showToast("Unable to generate share link", "error");
+      return;
+    }
+
+    const relativeUrl = `${window.location.pathname}${window.location.search}#${shareHash}`;
+    const absoluteUrl = `${window.location.origin}${relativeUrl}`;
+    window.history.replaceState(null, "", relativeUrl);
+
+    try {
+      await navigator.clipboard.writeText(absoluteUrl);
+      showToast("Share link copied", "success");
+    } catch {
+      showToast("Share link ready in address bar", "info");
+    }
   };
 
   const exportImage = async (format: "png" | "jpg") => {
@@ -219,6 +244,29 @@ export default function MermaidWorkbench() {
     [appMode, graphBackgroundColor, graphBackgroundStyle]
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const applySharedHash = () => {
+      const parsed = parseSharedCodeFromHash(window.location.hash);
+      if (!parsed.hasShareCode) {
+        return;
+      }
+      if (parsed.code === null) {
+        showToast("Invalid share link", "error");
+        return;
+      }
+      setCode(parsed.code);
+      showToast("Loaded diagram from share link", "success");
+    };
+
+    applySharedHash();
+    window.addEventListener("hashchange", applySharedHash);
+    return () => window.removeEventListener("hashchange", applySharedHash);
+  }, []);
+
   return (
     <ThemeProvider theme={uiTheme}>
       <Box sx={{ p: { xs: 1.25, md: 2.5 }, height: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
@@ -227,6 +275,7 @@ export default function MermaidWorkbench() {
         mobilePanelMode={mobilePanelMode}
         canExport={Boolean(svg || code.trim())}
         onFormatCode={handleFormatCode}
+        onShareLink={handleShareLink}
         onOpenGraph={() => setGraphOpen(true)}
         onOpenExport={() => setExportOpen(true)}
         onOpenTheme={() => setThemeOpen(true)}

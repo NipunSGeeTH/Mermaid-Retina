@@ -6,6 +6,7 @@ export default function WorkbenchToolbar({
   mobilePanelMode,
   canExport,
   onFormatCode,
+  onShareLink,
   onOpenGraph,
   onOpenExport,
   onOpenTheme,
@@ -32,6 +33,9 @@ export default function WorkbenchToolbar({
         <Stack direction="row" gap={1}>
           <Button variant="outlined" onClick={onFormatCode} title="Format Mermaid code (Shift + Alt + F)">
             Format
+          </Button>
+          <Button variant="outlined" onClick={onShareLink}>
+            Share
           </Button>
           <Button variant="outlined" onClick={onOpenGraph}>
             Graph
