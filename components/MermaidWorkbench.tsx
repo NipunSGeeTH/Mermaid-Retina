@@ -53,6 +53,7 @@ export default function MermaidWorkbench() {
   const [themeOpen, setThemeOpen] = useState<boolean>(false);
   const [exportType, setExportType] = useState<ExportType>("png");
   const [exportTransparent, setExportTransparent] = useState<boolean>(false);
+  const [pdfSize, setPdfSize] = useState<string>("a4");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(DIAGRAM_TEMPLATES[0].id);
   const [toast, setToast] = useState<ToastState>({ open: false, message: "", severity: "info" });
   const importFileRef = useRef<HTMLInputElement | null>(null);
@@ -116,12 +117,52 @@ export default function MermaidWorkbench() {
     triggerDownload(blob, `diagram-${scale}x.${format}`);
   };
 
+  const exportPdf = async () => {
+    if (!svg) return;
+    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    let image: HTMLImageElement;
+    try {
+      image = await loadSvgImage(svgUrl);
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas context unavailable");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    const imageData = canvas.toDataURL("image/jpeg", 0.95);
+    const orientation = canvas.width >= canvas.height ? "landscape" : "portrait";
+    const { jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({ orientation, unit: "mm", format: pdfSize });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const maxWidth = pageWidth - margin * 2;
+    const maxHeight = pageHeight - margin * 2;
+    const ratio = Math.min(maxWidth / canvas.width, maxHeight / canvas.height);
+    const renderWidth = canvas.width * ratio;
+    const renderHeight = canvas.height * ratio;
+    const x = (pageWidth - renderWidth) / 2;
+    const y = (pageHeight - renderHeight) / 2;
+    pdf.addImage(imageData, "JPEG", x, y, renderWidth, renderHeight);
+    pdf.save(`diagram-${pdfSize}.pdf`);
+  };
+
   const exportSelected = async () => {
     try {
       if (exportType === "png") {
         await exportImage("png");
       } else if (exportType === "jpg") {
         await exportImage("jpg");
+      } else if (exportType === "pdf") {
+        await exportPdf();
       } else if (exportType === "svg") {
         if (!svg) return;
         const safeSvg = makeSvgExportCompatible(svg);
@@ -214,6 +255,7 @@ export default function MermaidWorkbench() {
         open={exportOpen}
         exportType={exportType}
         exportTransparent={exportTransparent}
+        pdfSize={pdfSize}
         scale={scale}
         scales={SCALES}
         onClose={() => setExportOpen(false)}
@@ -225,6 +267,7 @@ export default function MermaidWorkbench() {
           }
         }}
         onExportTransparentChange={setExportTransparent}
+        onPdfSizeChange={(event) => setPdfSize(event.target.value)}
         onScaleChange={(event) => setScale(Number(event.target.value))}
         onConfirm={exportSelected}
       />

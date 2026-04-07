@@ -19,11 +19,13 @@ type ExportDialogProps = {
   open: boolean;
   exportType: ExportType;
   exportTransparent: boolean;
+  pdfSize: string;
   scale: number;
   scales: readonly number[];
   onClose: () => void;
   onExportTypeChange: (event: SelectChangeEvent<ExportType>) => void;
   onExportTransparentChange: (checked: boolean) => void;
+  onPdfSizeChange: (event: SelectChangeEvent<string>) => void;
   onScaleChange: (event: SelectChangeEvent<number>) => void;
   onConfirm: () => void;
 };
@@ -32,15 +34,18 @@ export default function ExportDialog({
   open,
   exportType,
   exportTransparent,
+  pdfSize,
   scale,
   scales,
   onClose,
   onExportTypeChange,
   onExportTransparentChange,
+  onPdfSizeChange,
   onScaleChange,
   onConfirm,
 }: ExportDialogProps) {
   const isImageExport = exportType === "png" || exportType === "jpg";
+  const isPdfExport = exportType === "pdf";
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
@@ -57,6 +62,7 @@ export default function ExportDialog({
             >
               <MenuItem value="png">PNG Image</MenuItem>
               <MenuItem value="jpg">JPG Image</MenuItem>
+              <MenuItem value="pdf">PDF Document</MenuItem>
               <MenuItem value="svg">SVG Vector</MenuItem>
               <MenuItem value="mmd">Mermaid Source (.mmd)</MenuItem>
             </Select>
@@ -76,6 +82,23 @@ export default function ExportDialog({
                     {item}x
                   </MenuItem>
                 ))}
+              </Select>
+            </FormControl>
+          ) : null}
+
+          {isPdfExport ? (
+            <FormControl size="small" fullWidth>
+              <InputLabel id="pdf-size-label">PDF Size</InputLabel>
+              <Select
+                labelId="pdf-size-label"
+                value={pdfSize}
+                label="PDF Size"
+                onChange={onPdfSizeChange}
+              >
+                <MenuItem value="a4">A4</MenuItem>
+                <MenuItem value="letter">Letter</MenuItem>
+                <MenuItem value="legal">Legal</MenuItem>
+                <MenuItem value="a3">A3</MenuItem>
               </Select>
             </FormControl>
           ) : null}
