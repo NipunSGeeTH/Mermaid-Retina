@@ -6,6 +6,7 @@ import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { type MermaidTheme } from "@/lib/mermaidThemes";
 import { DEFAULT_SECTION_COLORS, SCALES } from "@/components/workbench/constants";
 import ExportDialog from "@/components/workbench/ExportDialog";
+import GraphTypeDialog from "@/components/workbench/GraphTypeDialog";
 import WorkbenchPanels from "@/components/workbench/WorkbenchPanels";
 import WorkbenchToolbar from "@/components/workbench/WorkbenchToolbar";
 import ThemeDialog from "@/components/workbench/ThemeDialog";
@@ -22,15 +23,16 @@ export default function MermaidWorkbench() {
   const [sectionColors, setSectionColors] = useState<SectionColors>(DEFAULT_SECTION_COLORS);
   const [mobilePanelMode, setMobilePanelMode] = useState<MobilePanelMode>("split");
   const [isReady, setIsReady] = useState<boolean>(false);
+  const [graphOpen, setGraphOpen] = useState<boolean>(false);
   const [exportOpen, setExportOpen] = useState<boolean>(false);
   const [themeOpen, setThemeOpen] = useState<boolean>(false);
   const [exportType, setExportType] = useState<ExportType>("png");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(DIAGRAM_TEMPLATES[0].id);
   const [toast, setToast] = useState<ToastState>({ open: false, message: "", severity: "info" });
   const importFileRef = useRef<HTMLInputElement | null>(null);
 
   const { svg, error } = useMermaidPreview(code, theme);
-  const { isDesktop, splitRatio, isDraggingSplit, splitContainerRef, startSplitDrag, setSplitRatio } =
-    useSplitLayout(50);
+  const { isDesktop, splitRatio, isDraggingSplit, splitContainerRef, startSplitDrag, setSplitRatio } = useSplitLayout(50);
 
   useWorkbenchPersistence({
     code,
@@ -107,9 +109,7 @@ export default function MermaidWorkbench() {
 
   const handleStartSplitDrag = (event: PointerEvent<HTMLDivElement>) => startSplitDrag(event);
 
-  const handleThemeChange = (event: SelectChangeEvent<string>) => {
-    setTheme(event.target.value as MermaidTheme);
-  };
+  const handleThemeChange = (event: SelectChangeEvent<string>) => setTheme(event.target.value as MermaidTheme);
 
   return (
     <Box
@@ -125,6 +125,7 @@ export default function MermaidWorkbench() {
         isDesktop={isDesktop}
         mobilePanelMode={mobilePanelMode}
         canExport={Boolean(svg || code.trim())}
+        onOpenGraph={() => setGraphOpen(true)}
         onOpenExport={() => setExportOpen(true)}
         onOpenTheme={() => setThemeOpen(true)}
         onImportClick={() => importFileRef.current?.click()}
@@ -150,6 +151,22 @@ export default function MermaidWorkbench() {
 
       <input ref={importFileRef} type="file" accept=".mmd,.mermaid,.txt" hidden onChange={handleImportSource} />
 
+      <GraphTypeDialog
+        open={graphOpen}
+        templates={DIAGRAM_TEMPLATES}
+        selectedTemplateId={selectedTemplateId}
+        onClose={() => setGraphOpen(false)}
+        onTemplateChange={(event) => setSelectedTemplateId(event.target.value)}
+        onApply={() => {
+          const selected = DIAGRAM_TEMPLATES.find((item) => item.id === selectedTemplateId);
+          if (selected) {
+            setCode(selected.code);
+            showToast(`Loaded ${selected.name} sample`, "success");
+          }
+          setGraphOpen(false);
+        }}
+      />
+
       <ExportDialog
         open={exportOpen}
         exportType={exportType}
@@ -167,17 +184,10 @@ export default function MermaidWorkbench() {
         sectionColors={sectionColors}
         onClose={() => setThemeOpen(false)}
         onThemeChange={handleThemeChange}
-        onSectionColorChange={(key, value) =>
-          setSectionColors((prev) => ({ ...prev, [key]: value }))
-        }
+        onSectionColorChange={(key, value) => setSectionColors((prev) => ({ ...prev, [key]: value }))}
       />
 
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={2500}
-        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
+      <Snackbar open={toast.open} autoHideDuration={2500} onClose={() => setToast((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         <Alert severity={toast.severity} variant="filled" onClose={() => setToast((prev) => ({ ...prev, open: false }))}>
           {toast.message}
         </Alert>

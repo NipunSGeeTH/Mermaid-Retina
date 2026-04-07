@@ -67,5 +67,62 @@ export const DIAGRAM_TEMPLATES: DiagramTemplate[] = [
   Add collaboration      :a3, after a2, 7d
   Public launch          :a4, after a3, 3d`,
   },
+  {
+    id: "state-order",
+    name: "State Diagram",
+    description: "State transitions for order lifecycle.",
+    code: `stateDiagram-v2
+  [*] --> Draft
+  Draft --> Submitted
+  Submitted --> Approved
+  Submitted --> Rejected
+  Approved --> Fulfilled
+  Fulfilled --> [*]`,
+  },
+  {
+    id: "er-commerce",
+    name: "ER Diagram",
+    description: "Entity relationship for commerce entities.",
+    code: `erDiagram
+  USER ||--o{ ORDER : places
+  ORDER ||--|{ ORDER_ITEM : contains
+  PRODUCT ||--o{ ORDER_ITEM : listed_in
+  USER {
+    int id
+    string name
+  }
+  ORDER {
+    int id
+    string status
+  }
+  PRODUCT {
+    int id
+    string title
+  }`,
+  },
+  {
+    id: "journey-checkout",
+    name: "Journey Map",
+    description: "User journey across checkout steps.",
+    code: `journey
+  title Checkout Journey
+  section Browse
+    Find product: 5: User
+    Add to cart: 4: User
+  section Checkout
+    Fill address: 3: User
+    Pay: 2: User
+  section Post-purchase
+    Receive order: 5: User`,
+  },
+  {
+    id: "pie-traffic",
+    name: "Pie Chart",
+    description: "Traffic source breakdown.",
+    code: `pie title Traffic Sources
+  \"Organic\" : 42
+  \"Direct\" : 28
+  \"Referral\" : 18
+  \"Social\" : 12`,
+  },
 ];
-

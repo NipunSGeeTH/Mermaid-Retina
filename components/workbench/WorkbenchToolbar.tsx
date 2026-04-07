@@ -5,6 +5,7 @@ export default function WorkbenchToolbar({
   isDesktop,
   mobilePanelMode,
   canExport,
+  onOpenGraph,
   onOpenExport,
   onOpenTheme,
   onImportClick,
@@ -28,6 +29,9 @@ export default function WorkbenchToolbar({
           Mermaid Editor
         </Typography>
         <Stack direction="row" gap={1}>
+          <Button variant="outlined" onClick={onOpenGraph}>
+            Graph
+          </Button>
           <Button variant="outlined" onClick={onImportClick}>
             Import
           </Button>
