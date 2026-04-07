@@ -3,22 +3,22 @@
 import { useEffect } from "react";
 import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
-import { DEFAULT_SECTION_COLORS, SCALES, STORAGE_KEY } from "@/components/workbench/constants";
+import { SCALES, STORAGE_KEY } from "@/components/workbench/constants";
 import type { PersistParams, PersistedState } from "@/components/workbench/types";
 
 export function useWorkbenchPersistence(params: PersistParams) {
   const {
     code,
     theme,
+    appMode,
     scale,
     splitRatio,
-    sectionColors,
     isReady,
     setCode,
     setTheme,
+    setAppMode,
     setScale,
     setSplitRatio,
-    setSectionColors,
     setIsReady,
   } = params;
 
@@ -45,28 +45,11 @@ export function useWorkbenchPersistence(params: PersistParams) {
         ) {
           setTheme(parsed.theme as MermaidTheme);
         }
+        if (parsed.appMode === "dark" || parsed.appMode === "light") {
+          setAppMode(parsed.appMode);
+        }
         if (typeof parsed.splitRatio === "number") {
           setSplitRatio(parsed.splitRatio);
-        }
-        if (parsed.sectionColors && typeof parsed.sectionColors === "object") {
-          setSectionColors({
-            pageBackground:
-              typeof parsed.sectionColors.pageBackground === "string"
-                ? parsed.sectionColors.pageBackground
-                : DEFAULT_SECTION_COLORS.pageBackground,
-            editorBackground:
-              typeof parsed.sectionColors.editorBackground === "string"
-                ? parsed.sectionColors.editorBackground
-                : DEFAULT_SECTION_COLORS.editorBackground,
-            editorText:
-              typeof parsed.sectionColors.editorText === "string"
-                ? parsed.sectionColors.editorText
-                : DEFAULT_SECTION_COLORS.editorText,
-            previewBackground:
-              typeof parsed.sectionColors.previewBackground === "string"
-                ? parsed.sectionColors.previewBackground
-                : DEFAULT_SECTION_COLORS.previewBackground,
-          });
         }
       }
     } catch {
@@ -80,7 +63,7 @@ export function useWorkbenchPersistence(params: PersistParams) {
     if (!isReady || typeof window === "undefined") {
       return;
     }
-    const payload: PersistedState = { code, theme, scale, splitRatio, sectionColors };
+    const payload: PersistedState = { code, theme, appMode, scale, splitRatio };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [code, isReady, scale, sectionColors, splitRatio, theme]);
+  }, [appMode, code, isReady, scale, splitRatio, theme]);
 }

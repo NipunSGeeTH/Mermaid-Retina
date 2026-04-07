@@ -10,7 +10,6 @@ export default function WorkbenchPanels({
   code,
   error,
   svg,
-  sectionColors,
   splitContainerRef,
   onCodeChange,
   onStartSplitDrag,
@@ -60,8 +59,8 @@ export default function WorkbenchPanels({
               fontFamily: "inherit",
               fontSize: "0.9rem",
               lineHeight: 1.6,
-              backgroundColor: sectionColors.editorBackground,
-              color: sectionColors.editorText,
+              backgroundColor: "background.paper",
+              color: "text.primary",
             }}
           />
         </Paper>
@@ -115,7 +114,7 @@ export default function WorkbenchPanels({
               alignItems: error ? "flex-start" : "center",
               overflow: "auto",
               flex: 1,
-              backgroundColor: sectionColors.previewBackground,
+              backgroundColor: "background.default",
             }}
           >
             {error ? (

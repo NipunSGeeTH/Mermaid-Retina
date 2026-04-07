@@ -9,28 +9,27 @@ import {
   MenuItem,
   Select,
   Stack,
-  TextField,
   type SelectChangeEvent,
 } from "@mui/material";
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
-import type { SectionColors } from "@/components/workbench/types";
+import type { AppMode } from "@/components/workbench/types";
 
 type ThemeDialogProps = {
   open: boolean;
   theme: MermaidTheme;
-  sectionColors: SectionColors;
+  appMode: AppMode;
   onClose: () => void;
   onThemeChange: (event: SelectChangeEvent<string>) => void;
-  onSectionColorChange: (key: keyof SectionColors, value: string) => void;
+  onAppModeChange: (event: SelectChangeEvent<string>) => void;
 };
 
 export default function ThemeDialog({
   open,
   theme,
-  sectionColors,
+  appMode,
   onClose,
   onThemeChange,
-  onSectionColorChange,
+  onAppModeChange,
 }: ThemeDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
@@ -53,38 +52,18 @@ export default function ThemeDialog({
             </Select>
           </FormControl>
 
-          <TextField
-            size="small"
-            label="Page Background"
-            type="color"
-            value={sectionColors.pageBackground}
-            onChange={(event) => onSectionColorChange("pageBackground", event.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            size="small"
-            label="Editor Background"
-            type="color"
-            value={sectionColors.editorBackground}
-            onChange={(event) => onSectionColorChange("editorBackground", event.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            size="small"
-            label="Editor Text"
-            type="color"
-            value={sectionColors.editorText}
-            onChange={(event) => onSectionColorChange("editorText", event.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
-          <TextField
-            size="small"
-            label="Preview Background"
-            type="color"
-            value={sectionColors.previewBackground}
-            onChange={(event) => onSectionColorChange("previewBackground", event.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
+          <FormControl size="small" fullWidth>
+            <InputLabel id="app-mode-label">App Mode</InputLabel>
+            <Select
+              labelId="app-mode-label"
+              value={appMode}
+              label="App Mode"
+              onChange={onAppModeChange}
+            >
+              <MenuItem value="dark">Dark</MenuItem>
+              <MenuItem value="light">Light</MenuItem>
+            </Select>
+          </FormControl>
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -93,4 +72,3 @@ export default function ThemeDialog({
     </Dialog>
   );
 }
-

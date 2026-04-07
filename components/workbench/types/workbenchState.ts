@@ -7,19 +7,14 @@ export type ToastState = {
   severity: AlertColor;
 };
 
-export type SectionColors = {
-  pageBackground: string;
-  editorBackground: string;
-  editorText: string;
-  previewBackground: string;
-};
+export type AppMode = "dark" | "light";
 
 export type PersistedState = {
   code: string;
   theme: MermaidTheme;
+  appMode: AppMode;
   scale: number;
   splitRatio: number;
-  sectionColors: SectionColors;
 };
 
 export type MobilePanelMode = "split" | "editor" | "preview";

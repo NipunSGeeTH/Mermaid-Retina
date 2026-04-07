@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent, type PointerEvent } from "react";
-import { Alert, Box, Snackbar, type SelectChangeEvent } from "@mui/material";
+import { Alert, Box, Snackbar, ThemeProvider, createTheme, type SelectChangeEvent } from "@mui/material";
 import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { type MermaidTheme } from "@/lib/mermaidThemes";
-import { DEFAULT_SECTION_COLORS, SCALES } from "@/components/workbench/constants";
+import { SCALES } from "@/components/workbench/constants";
 import ExportDialog from "@/components/workbench/ExportDialog";
 import GraphTypeDialog from "@/components/workbench/GraphTypeDialog";
 import WorkbenchPanels from "@/components/workbench/WorkbenchPanels";
@@ -14,13 +14,13 @@ import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
 import { canvasToPngBlob, loadSvgImage, triggerDownload } from "@/components/workbench/utils";
-import type { ExportType, MobilePanelMode, SectionColors, ToastState } from "@/components/workbench/types";
+import type { AppMode, ExportType, MobilePanelMode, ToastState } from "@/components/workbench/types";
 
 export default function MermaidWorkbench() {
   const [code, setCode] = useState<string>(DIAGRAM_TEMPLATES[0].code);
   const [scale, setScale] = useState<number>(2);
   const [theme, setTheme] = useState<MermaidTheme>("dark");
-  const [sectionColors, setSectionColors] = useState<SectionColors>(DEFAULT_SECTION_COLORS);
+  const [appMode, setAppMode] = useState<AppMode>("dark");
   const [mobilePanelMode, setMobilePanelMode] = useState<MobilePanelMode>("split");
   const [isReady, setIsReady] = useState<boolean>(false);
   const [graphOpen, setGraphOpen] = useState<boolean>(false);
@@ -37,15 +37,15 @@ export default function MermaidWorkbench() {
   useWorkbenchPersistence({
     code,
     theme,
+    appMode,
     scale,
     splitRatio,
-    sectionColors,
     isReady,
     setCode,
     setTheme,
+    setAppMode,
     setScale,
     setSplitRatio,
-    setSectionColors,
     setIsReady,
   });
 
@@ -110,17 +110,15 @@ export default function MermaidWorkbench() {
   const handleStartSplitDrag = (event: PointerEvent<HTMLDivElement>) => startSplitDrag(event);
 
   const handleThemeChange = (event: SelectChangeEvent<string>) => setTheme(event.target.value as MermaidTheme);
+  const handleAppModeChange = (event: SelectChangeEvent<string>) => {
+    setAppMode(event.target.value as AppMode);
+  };
+
+  const uiTheme = createTheme({ palette: { mode: appMode } });
 
   return (
-    <Box
-      sx={{
-        p: { xs: 1.25, md: 2.5 },
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: sectionColors.pageBackground,
-      }}
-    >
+    <ThemeProvider theme={uiTheme}>
+      <Box sx={{ p: { xs: 1.25, md: 2.5 }, height: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
       <WorkbenchToolbar
         isDesktop={isDesktop}
         mobilePanelMode={mobilePanelMode}
@@ -142,7 +140,6 @@ export default function MermaidWorkbench() {
           code={code}
           error={error}
           svg={svg}
-          sectionColors={sectionColors}
           splitContainerRef={splitContainerRef}
           onCodeChange={setCode}
           onStartSplitDrag={handleStartSplitDrag}
@@ -181,10 +178,10 @@ export default function MermaidWorkbench() {
       <ThemeDialog
         open={themeOpen}
         theme={theme}
-        sectionColors={sectionColors}
+        appMode={appMode}
         onClose={() => setThemeOpen(false)}
         onThemeChange={handleThemeChange}
-        onSectionColorChange={(key, value) => setSectionColors((prev) => ({ ...prev, [key]: value }))}
+        onAppModeChange={handleAppModeChange}
       />
 
       <Snackbar open={toast.open} autoHideDuration={2500} onClose={() => setToast((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
@@ -192,6 +189,7 @@ export default function MermaidWorkbench() {
           {toast.message}
         </Alert>
       </Snackbar>
-    </Box>
+      </Box>
+    </ThemeProvider>
   );
 }
