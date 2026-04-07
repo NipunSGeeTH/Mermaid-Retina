@@ -4,18 +4,30 @@ import { useMemo, useRef, useState, type ChangeEvent, type PointerEvent } from "
 import { Alert, Box, Snackbar, ThemeProvider, type SelectChangeEvent } from "@mui/material";
 import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { type MermaidTheme } from "@/lib/mermaidThemes";
-import { SCALES } from "@/components/workbench/constants";
+import {
+  DEFAULT_GRAPH_BACKGROUND_COLOR,
+  DEFAULT_GRAPH_BACKGROUND_STYLE,
+  SCALES,
+} from "@/components/workbench/constants";
 import ExportDialog from "@/components/workbench/ExportDialog";
 import GraphTypeDialog from "@/components/workbench/GraphTypeDialog";
 import WorkbenchPanels from "@/components/workbench/WorkbenchPanels";
 import WorkbenchToolbar from "@/components/workbench/WorkbenchToolbar";
 import ThemeDialog from "@/components/workbench/ThemeDialog";
+import { applyCanvasBackground, getPreviewBackgroundCss } from "@/components/workbench/graphBackground";
 import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
 import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
 import { canvasToPngBlob, loadSvgImage, triggerDownload } from "@/components/workbench/utils";
-import type { AppMode, AppThemeName, ExportType, MobilePanelMode, ToastState } from "@/components/workbench/types";
+import type {
+  AppMode,
+  AppThemeName,
+  ExportType,
+  GraphBackgroundStyle,
+  MobilePanelMode,
+  ToastState,
+} from "@/components/workbench/types";
 
 export default function MermaidWorkbench() {
   const [code, setCode] = useState<string>(DIAGRAM_TEMPLATES[0].code);
@@ -23,6 +35,12 @@ export default function MermaidWorkbench() {
   const [theme, setTheme] = useState<MermaidTheme>("dark");
   const [appMode, setAppMode] = useState<AppMode>("dark");
   const [appTheme, setAppTheme] = useState<AppThemeName>("classic");
+  const [graphBackgroundStyle, setGraphBackgroundStyle] = useState<GraphBackgroundStyle>(
+    DEFAULT_GRAPH_BACKGROUND_STYLE as GraphBackgroundStyle
+  );
+  const [graphBackgroundColor, setGraphBackgroundColor] = useState<string>(
+    DEFAULT_GRAPH_BACKGROUND_COLOR
+  );
   const [mobilePanelMode, setMobilePanelMode] = useState<MobilePanelMode>("split");
   const [isReady, setIsReady] = useState<boolean>(false);
   const [graphOpen, setGraphOpen] = useState<boolean>(false);
@@ -41,6 +59,8 @@ export default function MermaidWorkbench() {
     theme,
     appMode,
     appTheme,
+    graphBackgroundStyle,
+    graphBackgroundColor,
     scale,
     splitRatio,
     isReady,
@@ -48,6 +68,8 @@ export default function MermaidWorkbench() {
     setTheme,
     setAppMode,
     setAppTheme,
+    setGraphBackgroundStyle,
+    setGraphBackgroundColor,
     setScale,
     setSplitRatio,
     setIsReady,
@@ -76,6 +98,14 @@ export default function MermaidWorkbench() {
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Canvas context unavailable");
     context.clearRect(0, 0, canvas.width, canvas.height);
+    applyCanvasBackground(
+      context,
+      canvas.width,
+      canvas.height,
+      graphBackgroundStyle,
+      graphBackgroundColor,
+      appMode
+    );
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     triggerDownload(await canvasToPngBlob(canvas), `diagram-${scale}x.png`);
   };
@@ -117,6 +147,10 @@ export default function MermaidWorkbench() {
   const handleAppModeChange = (event: SelectChangeEvent<string>) => setAppMode(event.target.value as AppMode);
   const handleAppThemeChange = (event: SelectChangeEvent<string>) => setAppTheme(event.target.value as AppThemeName);
   const uiTheme = useMemo(() => buildWorkbenchTheme(appTheme, appMode), [appMode, appTheme]);
+  const previewBackground = useMemo(
+    () => getPreviewBackgroundCss(graphBackgroundStyle, graphBackgroundColor, appMode),
+    [appMode, graphBackgroundColor, graphBackgroundStyle]
+  );
 
   return (
     <ThemeProvider theme={uiTheme}>
@@ -142,6 +176,7 @@ export default function MermaidWorkbench() {
           code={code}
           error={error}
           svg={svg}
+          previewBackground={previewBackground}
           splitContainerRef={splitContainerRef}
           onCodeChange={setCode}
           onStartSplitDrag={handleStartSplitDrag}
@@ -182,10 +217,16 @@ export default function MermaidWorkbench() {
         theme={theme}
         appMode={appMode}
         appTheme={appTheme}
+        graphBackgroundStyle={graphBackgroundStyle}
+        graphBackgroundColor={graphBackgroundColor}
         onClose={() => setThemeOpen(false)}
         onThemeChange={handleThemeChange}
         onAppModeChange={handleAppModeChange}
         onAppThemeChange={handleAppThemeChange}
+        onGraphBackgroundStyleChange={(event) =>
+          setGraphBackgroundStyle(event.target.value as GraphBackgroundStyle)
+        }
+        onGraphBackgroundColorChange={setGraphBackgroundColor}
       />
 
       <Snackbar open={toast.open} autoHideDuration={2500} onClose={() => setToast((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>

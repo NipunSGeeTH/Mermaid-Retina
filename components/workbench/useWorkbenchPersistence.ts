@@ -3,7 +3,12 @@
 import { useEffect } from "react";
 import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
-import { SCALES, STORAGE_KEY } from "@/components/workbench/constants";
+import {
+  DEFAULT_GRAPH_BACKGROUND_COLOR,
+  DEFAULT_GRAPH_BACKGROUND_STYLE,
+  SCALES,
+  STORAGE_KEY,
+} from "@/components/workbench/constants";
 import type { PersistParams, PersistedState } from "@/components/workbench/types";
 
 export function useWorkbenchPersistence(params: PersistParams) {
@@ -12,6 +17,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     theme,
     appMode,
     appTheme,
+    graphBackgroundStyle,
+    graphBackgroundColor,
     scale,
     splitRatio,
     isReady,
@@ -19,6 +26,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     setTheme,
     setAppMode,
     setAppTheme,
+    setGraphBackgroundStyle,
+    setGraphBackgroundColor,
     setScale,
     setSplitRatio,
     setIsReady,
@@ -58,6 +67,23 @@ export function useWorkbenchPersistence(params: PersistParams) {
         ) {
           setAppTheme(parsed.appTheme);
         }
+        if (
+          parsed.graphBackgroundStyle === "transparent" ||
+          parsed.graphBackgroundStyle === "solid" ||
+          parsed.graphBackgroundStyle === "soft-grid" ||
+          parsed.graphBackgroundStyle === "dots" ||
+          parsed.graphBackgroundStyle === "gradient" ||
+          parsed.graphBackgroundStyle === "custom"
+        ) {
+          setGraphBackgroundStyle(parsed.graphBackgroundStyle);
+        } else {
+          setGraphBackgroundStyle(DEFAULT_GRAPH_BACKGROUND_STYLE);
+        }
+        if (typeof parsed.graphBackgroundColor === "string") {
+          setGraphBackgroundColor(parsed.graphBackgroundColor);
+        } else {
+          setGraphBackgroundColor(DEFAULT_GRAPH_BACKGROUND_COLOR);
+        }
         if (typeof parsed.splitRatio === "number") {
           setSplitRatio(parsed.splitRatio);
         }
@@ -73,7 +99,26 @@ export function useWorkbenchPersistence(params: PersistParams) {
     if (!isReady || typeof window === "undefined") {
       return;
     }
-    const payload: PersistedState = { code, theme, appMode, appTheme, scale, splitRatio };
+    const payload: PersistedState = {
+      code,
+      theme,
+      appMode,
+      appTheme,
+      graphBackgroundStyle,
+      graphBackgroundColor,
+      scale,
+      splitRatio,
+    };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [appMode, appTheme, code, isReady, scale, splitRatio, theme]);
+  }, [
+    appMode,
+    appTheme,
+    code,
+    graphBackgroundColor,
+    graphBackgroundStyle,
+    isReady,
+    scale,
+    splitRatio,
+    theme,
+  ]);
 }

@@ -5,6 +5,7 @@ export type {
   ExportType,
   AppMode,
   AppThemeName,
+  GraphBackgroundStyle,
 } from "./workbenchState";
 export type { WorkbenchToolbarProps } from "./toolbar";
 export type { WorkbenchPanelsProps } from "./panels";

@@ -10,6 +10,7 @@ export default function WorkbenchPanels({
   code,
   error,
   svg,
+  previewBackground,
   splitContainerRef,
   onCodeChange,
   onStartSplitDrag,
@@ -114,7 +115,8 @@ export default function WorkbenchPanels({
               alignItems: error ? "flex-start" : "center",
               overflow: "auto",
               flex: 1,
-              backgroundColor: "background.default",
+              background: previewBackground,
+              backgroundSize: "20px 20px",
             }}
           >
             {error ? (

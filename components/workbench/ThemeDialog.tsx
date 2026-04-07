@@ -9,21 +9,27 @@ import {
   MenuItem,
   Select,
   Stack,
+  TextField,
   type SelectChangeEvent,
 } from "@mui/material";
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
+import { GRAPH_BACKGROUND_OPTIONS } from "@/components/workbench/graphBackground";
 import { APP_THEME_OPTIONS } from "@/components/workbench/themePresets";
-import type { AppMode, AppThemeName } from "@/components/workbench/types";
+import type { AppMode, AppThemeName, GraphBackgroundStyle } from "@/components/workbench/types";
 
 type ThemeDialogProps = {
   open: boolean;
   theme: MermaidTheme;
   appMode: AppMode;
   appTheme: AppThemeName;
+  graphBackgroundStyle: GraphBackgroundStyle;
+  graphBackgroundColor: string;
   onClose: () => void;
   onThemeChange: (event: SelectChangeEvent<string>) => void;
   onAppModeChange: (event: SelectChangeEvent<string>) => void;
   onAppThemeChange: (event: SelectChangeEvent<string>) => void;
+  onGraphBackgroundStyleChange: (event: SelectChangeEvent<string>) => void;
+  onGraphBackgroundColorChange: (value: string) => void;
 };
 
 export default function ThemeDialog({
@@ -31,10 +37,14 @@ export default function ThemeDialog({
   theme,
   appMode,
   appTheme,
+  graphBackgroundStyle,
+  graphBackgroundColor,
   onClose,
   onThemeChange,
   onAppModeChange,
   onAppThemeChange,
+  onGraphBackgroundStyleChange,
+  onGraphBackgroundColorChange,
 }: ThemeDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
@@ -85,6 +95,33 @@ export default function ThemeDialog({
               ))}
             </Select>
           </FormControl>
+
+          <FormControl size="small" fullWidth>
+            <InputLabel id="graph-bg-style-label">Graph Background</InputLabel>
+            <Select
+              labelId="graph-bg-style-label"
+              value={graphBackgroundStyle}
+              label="Graph Background"
+              onChange={onGraphBackgroundStyleChange}
+            >
+              {GRAPH_BACKGROUND_OPTIONS.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {(graphBackgroundStyle === "custom" || graphBackgroundStyle === "solid") ? (
+            <TextField
+              size="small"
+              label="Background Color"
+              type="color"
+              value={graphBackgroundColor}
+              onChange={(event) => onGraphBackgroundColorChange(event.target.value)}
+              InputLabelProps={{ shrink: true }}
+            />
+          ) : null}
         </Stack>
       </DialogContent>
       <DialogActions>

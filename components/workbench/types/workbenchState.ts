@@ -9,12 +9,21 @@ export type ToastState = {
 
 export type AppMode = "dark" | "light";
 export type AppThemeName = "classic" | "ocean" | "forest" | "sunset";
+export type GraphBackgroundStyle =
+  | "transparent"
+  | "solid"
+  | "soft-grid"
+  | "dots"
+  | "gradient"
+  | "custom";
 
 export type PersistedState = {
   code: string;
   theme: MermaidTheme;
   appMode: AppMode;
   appTheme: AppThemeName;
+  graphBackgroundStyle: GraphBackgroundStyle;
+  graphBackgroundColor: string;
   scale: number;
   splitRatio: number;
 };
