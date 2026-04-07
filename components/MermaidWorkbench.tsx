@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type ChangeEvent, type PointerEvent } from "react";
-import { Alert, Box, Snackbar, ThemeProvider, createTheme, type SelectChangeEvent } from "@mui/material";
+import { useMemo, useRef, useState, type ChangeEvent, type PointerEvent } from "react";
+import { Alert, Box, Snackbar, ThemeProvider, type SelectChangeEvent } from "@mui/material";
 import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { type MermaidTheme } from "@/lib/mermaidThemes";
 import { SCALES } from "@/components/workbench/constants";
@@ -13,14 +13,16 @@ import ThemeDialog from "@/components/workbench/ThemeDialog";
 import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
+import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
 import { canvasToPngBlob, loadSvgImage, triggerDownload } from "@/components/workbench/utils";
-import type { AppMode, ExportType, MobilePanelMode, ToastState } from "@/components/workbench/types";
+import type { AppMode, AppThemeName, ExportType, MobilePanelMode, ToastState } from "@/components/workbench/types";
 
 export default function MermaidWorkbench() {
   const [code, setCode] = useState<string>(DIAGRAM_TEMPLATES[0].code);
   const [scale, setScale] = useState<number>(2);
   const [theme, setTheme] = useState<MermaidTheme>("dark");
   const [appMode, setAppMode] = useState<AppMode>("dark");
+  const [appTheme, setAppTheme] = useState<AppThemeName>("classic");
   const [mobilePanelMode, setMobilePanelMode] = useState<MobilePanelMode>("split");
   const [isReady, setIsReady] = useState<boolean>(false);
   const [graphOpen, setGraphOpen] = useState<boolean>(false);
@@ -38,12 +40,14 @@ export default function MermaidWorkbench() {
     code,
     theme,
     appMode,
+    appTheme,
     scale,
     splitRatio,
     isReady,
     setCode,
     setTheme,
     setAppMode,
+    setAppTheme,
     setScale,
     setSplitRatio,
     setIsReady,
@@ -110,11 +114,9 @@ export default function MermaidWorkbench() {
   const handleStartSplitDrag = (event: PointerEvent<HTMLDivElement>) => startSplitDrag(event);
 
   const handleThemeChange = (event: SelectChangeEvent<string>) => setTheme(event.target.value as MermaidTheme);
-  const handleAppModeChange = (event: SelectChangeEvent<string>) => {
-    setAppMode(event.target.value as AppMode);
-  };
-
-  const uiTheme = createTheme({ palette: { mode: appMode } });
+  const handleAppModeChange = (event: SelectChangeEvent<string>) => setAppMode(event.target.value as AppMode);
+  const handleAppThemeChange = (event: SelectChangeEvent<string>) => setAppTheme(event.target.value as AppThemeName);
+  const uiTheme = useMemo(() => buildWorkbenchTheme(appTheme, appMode), [appMode, appTheme]);
 
   return (
     <ThemeProvider theme={uiTheme}>
@@ -179,9 +181,11 @@ export default function MermaidWorkbench() {
         open={themeOpen}
         theme={theme}
         appMode={appMode}
+        appTheme={appTheme}
         onClose={() => setThemeOpen(false)}
         onThemeChange={handleThemeChange}
         onAppModeChange={handleAppModeChange}
+        onAppThemeChange={handleAppThemeChange}
       />
 
       <Snackbar open={toast.open} autoHideDuration={2500} onClose={() => setToast((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>

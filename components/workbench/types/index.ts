@@ -4,6 +4,7 @@ export type {
   MobilePanelMode,
   ExportType,
   AppMode,
+  AppThemeName,
 } from "./workbenchState";
 export type { WorkbenchToolbarProps } from "./toolbar";
 export type { WorkbenchPanelsProps } from "./panels";

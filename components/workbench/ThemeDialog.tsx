@@ -12,24 +12,29 @@ import {
   type SelectChangeEvent,
 } from "@mui/material";
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
-import type { AppMode } from "@/components/workbench/types";
+import { APP_THEME_OPTIONS } from "@/components/workbench/themePresets";
+import type { AppMode, AppThemeName } from "@/components/workbench/types";
 
 type ThemeDialogProps = {
   open: boolean;
   theme: MermaidTheme;
   appMode: AppMode;
+  appTheme: AppThemeName;
   onClose: () => void;
   onThemeChange: (event: SelectChangeEvent<string>) => void;
   onAppModeChange: (event: SelectChangeEvent<string>) => void;
+  onAppThemeChange: (event: SelectChangeEvent<string>) => void;
 };
 
 export default function ThemeDialog({
   open,
   theme,
   appMode,
+  appTheme,
   onClose,
   onThemeChange,
   onAppModeChange,
+  onAppThemeChange,
 }: ThemeDialogProps) {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
@@ -62,6 +67,22 @@ export default function ThemeDialog({
             >
               <MenuItem value="dark">Dark</MenuItem>
               <MenuItem value="light">Light</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" fullWidth>
+            <InputLabel id="app-theme-label">Main Theme</InputLabel>
+            <Select
+              labelId="app-theme-label"
+              value={appTheme}
+              label="Main Theme"
+              onChange={onAppThemeChange}
+            >
+              {APP_THEME_OPTIONS.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Stack>

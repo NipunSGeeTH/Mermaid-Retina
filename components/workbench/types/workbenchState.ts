@@ -8,11 +8,13 @@ export type ToastState = {
 };
 
 export type AppMode = "dark" | "light";
+export type AppThemeName = "classic" | "ocean" | "forest" | "sunset";
 
 export type PersistedState = {
   code: string;
   theme: MermaidTheme;
   appMode: AppMode;
+  appTheme: AppThemeName;
   scale: number;
   splitRatio: number;
 };

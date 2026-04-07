@@ -11,12 +11,14 @@ export function useWorkbenchPersistence(params: PersistParams) {
     code,
     theme,
     appMode,
+    appTheme,
     scale,
     splitRatio,
     isReady,
     setCode,
     setTheme,
     setAppMode,
+    setAppTheme,
     setScale,
     setSplitRatio,
     setIsReady,
@@ -48,6 +50,14 @@ export function useWorkbenchPersistence(params: PersistParams) {
         if (parsed.appMode === "dark" || parsed.appMode === "light") {
           setAppMode(parsed.appMode);
         }
+        if (
+          parsed.appTheme === "classic" ||
+          parsed.appTheme === "ocean" ||
+          parsed.appTheme === "forest" ||
+          parsed.appTheme === "sunset"
+        ) {
+          setAppTheme(parsed.appTheme);
+        }
         if (typeof parsed.splitRatio === "number") {
           setSplitRatio(parsed.splitRatio);
         }
@@ -63,7 +73,7 @@ export function useWorkbenchPersistence(params: PersistParams) {
     if (!isReady || typeof window === "undefined") {
       return;
     }
-    const payload: PersistedState = { code, theme, appMode, scale, splitRatio };
+    const payload: PersistedState = { code, theme, appMode, appTheme, scale, splitRatio };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [appMode, code, isReady, scale, splitRatio, theme]);
+  }, [appMode, appTheme, code, isReady, scale, splitRatio, theme]);
 }
