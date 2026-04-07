@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
 import { Alert, Box, Button, Dialog, DialogContent, Paper, Stack, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
+import { indentWithTab } from "@codemirror/commands";
+import { keymap } from "@codemirror/view";
+import { mermaid } from "codemirror-lang-mermaid";
 import type { WorkbenchPanelsProps } from "@/components/workbench/types";
 
 export default function WorkbenchPanels({
@@ -14,10 +19,28 @@ export default function WorkbenchPanels({
   previewBackground,
   splitContainerRef,
   onCodeChange,
+  onFormatCode,
   onStartSplitDrag,
 }: WorkbenchPanelsProps) {
+  const muiTheme = useTheme();
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [showFullScreenTopBar, setShowFullScreenTopBar] = useState(true);
+  const editorExtensions = useMemo(
+    () => [
+      mermaid(),
+      keymap.of([
+        indentWithTab,
+        {
+          key: "Shift-Alt-f",
+          run: () => {
+            onFormatCode();
+            return true;
+          },
+        },
+      ]),
+    ],
+    [onFormatCode]
+  );
 
   const previewContent = error ? (
     <Alert severity="error" sx={{ width: "100%", whiteSpace: "pre-wrap" }}>
@@ -61,29 +84,66 @@ export default function WorkbenchPanels({
           <Box sx={{ px: 1.5, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
             <Typography variant="subtitle2">Editor</Typography>
             <Typography variant="caption" color="text.secondary">
-              Mermaid syntax with autosave enabled.
+              Mermaid syntax with autosave. Use Tab for indent, Shift + Alt + F to format.
             </Typography>
           </Box>
           <Box
-            component="textarea"
-            aria-label="Mermaid code editor"
-            spellCheck={false}
-            value={code}
-            onChange={(event) => onCodeChange(event.target.value)}
             sx={{
-              width: "100%",
               flex: 1,
-              border: "none",
-              p: 2,
-              resize: "none",
-              outline: "none",
-              fontFamily: "inherit",
-              fontSize: "0.9rem",
-              lineHeight: 1.6,
+              minHeight: 0,
               backgroundColor: "background.paper",
-              color: "text.primary",
+              overflow: "hidden",
+              "& .cm-editor": {
+                height: "100%",
+                outline: "none",
+                backgroundColor: "background.paper",
+                color: "text.primary",
+                fontFamily:
+                  "'JetBrains Mono', 'Fira Code', 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace",
+                fontSize: "0.92rem",
+              },
+              "& .cm-cursor, & .cm-dropCursor": {
+                borderLeftColor: "primary.main",
+              },
+              "& .cm-scroller": {
+                overflow: "auto",
+                lineHeight: 1.7,
+              },
+              "& .cm-content": {
+                paddingBlock: 10,
+              },
+              "& .cm-selectionBackground, & .cm-content ::selection": {
+                backgroundColor: "action.selected",
+              },
+              "& .cm-gutters": {
+                backgroundColor: "background.default",
+                borderRight: "1px solid",
+                borderColor: "divider",
+                color: "text.secondary",
+              },
+              "& .cm-activeLine, & .cm-activeLineGutter": {
+                backgroundColor: "action.hover",
+              },
+              "& .cm-focused": {
+                outline: "none",
+              },
             }}
-          />
+          >
+            <CodeMirror
+              value={code}
+              height="100%"
+              theme={muiTheme.palette.mode}
+              extensions={editorExtensions}
+              basicSetup={{
+                lineNumbers: true,
+                foldGutter: true,
+                highlightActiveLine: true,
+                bracketMatching: true,
+                autocompletion: true,
+              }}
+              onChange={onCodeChange}
+            />
+          </Box>
         </Paper>
       ) : null}
 

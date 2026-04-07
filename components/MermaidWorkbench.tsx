@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState, type ChangeEvent, type PointerEvent } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type PointerEvent,
+} from "react";
 import { Alert, Box, Snackbar, ThemeProvider, type SelectChangeEvent } from "@mui/material";
 import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { type MermaidTheme } from "@/lib/mermaidThemes";
@@ -18,6 +24,7 @@ import { applyCanvasBackground, getPreviewBackgroundCss } from "@/components/wor
 import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
+import { formatMermaidCode } from "@/components/workbench/mermaidFormatter";
 import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
 import {
   canvasToBlob,
@@ -87,6 +94,16 @@ export default function MermaidWorkbench() {
 
   const showToast = (message: string, severity: ToastState["severity"]) => {
     setToast({ open: true, message, severity });
+  };
+
+  const handleFormatCode = () => {
+    const formattedCode = formatMermaidCode(code);
+    if (formattedCode === code) {
+      showToast("Code already formatted", "info");
+      return;
+    }
+    setCode(formattedCode);
+    showToast("Code formatted", "success");
   };
 
   const exportImage = async (format: "png" | "jpg") => {
@@ -209,6 +226,7 @@ export default function MermaidWorkbench() {
         isDesktop={isDesktop}
         mobilePanelMode={mobilePanelMode}
         canExport={Boolean(svg || code.trim())}
+        onFormatCode={handleFormatCode}
         onOpenGraph={() => setGraphOpen(true)}
         onOpenExport={() => setExportOpen(true)}
         onOpenTheme={() => setThemeOpen(true)}
@@ -229,6 +247,7 @@ export default function MermaidWorkbench() {
           previewBackground={previewBackground}
           splitContainerRef={splitContainerRef}
           onCodeChange={setCode}
+          onFormatCode={handleFormatCode}
           onStartSplitDrag={handleStartSplitDrag}
         />
       </Box>

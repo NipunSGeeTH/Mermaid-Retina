@@ -5,6 +5,7 @@ export default function WorkbenchToolbar({
   isDesktop,
   mobilePanelMode,
   canExport,
+  onFormatCode,
   onOpenGraph,
   onOpenExport,
   onOpenTheme,
@@ -29,6 +30,9 @@ export default function WorkbenchToolbar({
           Mermaid Editor
         </Typography>
         <Stack direction="row" gap={1}>
+          <Button variant="outlined" onClick={onFormatCode} title="Format Mermaid code (Shift + Alt + F)">
+            Format
+          </Button>
           <Button variant="outlined" onClick={onOpenGraph}>
             Graph
           </Button>

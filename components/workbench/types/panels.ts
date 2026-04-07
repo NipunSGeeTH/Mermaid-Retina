@@ -12,5 +12,6 @@ export type WorkbenchPanelsProps = {
   previewBackground: string;
   splitContainerRef: RefObject<HTMLDivElement | null>;
   onCodeChange: (nextCode: string) => void;
+  onFormatCode: () => void;
   onStartSplitDrag: (event: PointerEvent<HTMLDivElement>) => void;
 };
