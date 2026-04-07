@@ -1,4 +1,5 @@
 import type { PointerEvent, RefObject } from "react";
+import type { SectionColors } from "@/components/workbench/types/workbenchState";
 
 export type WorkbenchPanelsProps = {
   isDesktop: boolean;
@@ -7,12 +8,10 @@ export type WorkbenchPanelsProps = {
   showEditorPanel: boolean;
   showPreviewPanel: boolean;
   code: string;
-  templateId: string;
   error: string;
   svg: string;
+  sectionColors: SectionColors;
   splitContainerRef: RefObject<HTMLDivElement | null>;
   onCodeChange: (nextCode: string) => void;
-  onConvertTemplateToCustom: () => void;
   onStartSplitDrag: (event: PointerEvent<HTMLDivElement>) => void;
 };
-

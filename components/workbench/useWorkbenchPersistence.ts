@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
-import { SCALES, STORAGE_KEY } from "@/components/workbench/constants";
+import { DEFAULT_SECTION_COLORS, SCALES, STORAGE_KEY } from "@/components/workbench/constants";
 import type { PersistParams, PersistedState } from "@/components/workbench/types";
 
 export function useWorkbenchPersistence(params: PersistParams) {
@@ -11,14 +11,14 @@ export function useWorkbenchPersistence(params: PersistParams) {
     code,
     theme,
     scale,
-    templateId,
     splitRatio,
+    sectionColors,
     isReady,
     setCode,
     setTheme,
     setScale,
-    setTemplateId,
     setSplitRatio,
+    setSectionColors,
     setIsReady,
   } = params;
 
@@ -36,8 +36,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
         } else {
           setCode(DIAGRAM_TEMPLATES[0].code);
         }
-        if (typeof parsed.templateId === "string") {
-          setTemplateId(parsed.templateId);
+        if (typeof parsed.scale === "number" && SCALES.includes(parsed.scale as 1 | 2 | 4)) {
+          setScale(parsed.scale);
         }
         if (
           typeof parsed.theme === "string" &&
@@ -45,11 +45,28 @@ export function useWorkbenchPersistence(params: PersistParams) {
         ) {
           setTheme(parsed.theme as MermaidTheme);
         }
-        if (typeof parsed.scale === "number" && SCALES.includes(parsed.scale as 1 | 2 | 4)) {
-          setScale(parsed.scale);
-        }
         if (typeof parsed.splitRatio === "number") {
           setSplitRatio(parsed.splitRatio);
+        }
+        if (parsed.sectionColors && typeof parsed.sectionColors === "object") {
+          setSectionColors({
+            pageBackground:
+              typeof parsed.sectionColors.pageBackground === "string"
+                ? parsed.sectionColors.pageBackground
+                : DEFAULT_SECTION_COLORS.pageBackground,
+            editorBackground:
+              typeof parsed.sectionColors.editorBackground === "string"
+                ? parsed.sectionColors.editorBackground
+                : DEFAULT_SECTION_COLORS.editorBackground,
+            editorText:
+              typeof parsed.sectionColors.editorText === "string"
+                ? parsed.sectionColors.editorText
+                : DEFAULT_SECTION_COLORS.editorText,
+            previewBackground:
+              typeof parsed.sectionColors.previewBackground === "string"
+                ? parsed.sectionColors.previewBackground
+                : DEFAULT_SECTION_COLORS.previewBackground,
+          });
         }
       }
     } catch {
@@ -63,7 +80,7 @@ export function useWorkbenchPersistence(params: PersistParams) {
     if (!isReady || typeof window === "undefined") {
       return;
     }
-    const payload: PersistedState = { code, theme, scale, templateId, splitRatio };
+    const payload: PersistedState = { code, theme, scale, splitRatio, sectionColors };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [code, isReady, scale, splitRatio, templateId, theme]);
+  }, [code, isReady, scale, sectionColors, splitRatio, theme]);
 }

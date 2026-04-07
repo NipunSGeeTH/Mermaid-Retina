@@ -8,12 +8,11 @@ export default function WorkbenchPanels({
   showEditorPanel,
   showPreviewPanel,
   code,
-  templateId,
   error,
   svg,
+  sectionColors,
   splitContainerRef,
   onCodeChange,
-  onConvertTemplateToCustom,
   onStartSplitDrag,
 }: WorkbenchPanelsProps) {
   return (
@@ -23,7 +22,8 @@ export default function WorkbenchPanels({
         display: "grid",
         gridTemplateColumns: isDesktop ? `${splitRatio}fr 10px ${100 - splitRatio}fr` : "1fr",
         gap: isDesktop ? 0 : 1.5,
-        minHeight: { xs: "72vh", lg: "calc(100vh - 290px)" },
+        height: "100%",
+        minHeight: 0,
       }}
     >
       {showEditorPanel ? (
@@ -35,7 +35,7 @@ export default function WorkbenchPanels({
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            minHeight: 320,
+            minHeight: 0,
           }}
         >
           <Box sx={{ px: 1.5, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
@@ -49,12 +49,7 @@ export default function WorkbenchPanels({
             aria-label="Mermaid code editor"
             spellCheck={false}
             value={code}
-            onChange={(event) => {
-              onCodeChange(event.target.value);
-              if (templateId !== "custom") {
-                onConvertTemplateToCustom();
-              }
-            }}
+            onChange={(event) => onCodeChange(event.target.value)}
             sx={{
               width: "100%",
               flex: 1,
@@ -65,8 +60,8 @@ export default function WorkbenchPanels({
               fontFamily: "inherit",
               fontSize: "0.9rem",
               lineHeight: 1.6,
-              backgroundColor: "background.paper",
-              color: "text.primary",
+              backgroundColor: sectionColors.editorBackground,
+              color: sectionColors.editorText,
             }}
           />
         </Paper>
@@ -101,7 +96,7 @@ export default function WorkbenchPanels({
             border: "1px solid",
             borderColor: "divider",
             overflow: "hidden",
-            minHeight: 320,
+            minHeight: 0,
             display: "flex",
             flexDirection: "column",
           }}
@@ -120,6 +115,7 @@ export default function WorkbenchPanels({
               alignItems: error ? "flex-start" : "center",
               overflow: "auto",
               flex: 1,
+              backgroundColor: sectionColors.previewBackground,
             }}
           >
             {error ? (
