@@ -19,7 +19,12 @@ import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
 import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
-import { canvasToBlob, loadSvgImage, triggerDownload } from "@/components/workbench/utils";
+import {
+  canvasToBlob,
+  loadSvgImage,
+  makeSvgExportCompatible,
+  triggerDownload,
+} from "@/components/workbench/utils";
 import type {
   AppMode,
   AppThemeName,
@@ -119,7 +124,8 @@ export default function MermaidWorkbench() {
         await exportImage("jpg");
       } else if (exportType === "svg") {
         if (!svg) return;
-        triggerDownload(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }), "diagram.svg");
+        const safeSvg = makeSvgExportCompatible(svg);
+        triggerDownload(new Blob([safeSvg], { type: "image/svg+xml;charset=utf-8" }), "diagram.svg");
       } else {
         triggerDownload(new Blob([code], { type: "text/plain;charset=utf-8" }), "diagram.mmd");
       }

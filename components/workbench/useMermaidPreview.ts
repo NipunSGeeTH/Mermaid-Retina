@@ -19,7 +19,13 @@ export function useMermaidPreview(code: string, theme: MermaidTheme): MermaidPre
   const renderTokenRef = useRef<number>(0);
 
   useEffect(() => {
-    mermaid.initialize({ startOnLoad: false, theme });
+    mermaid.initialize({
+      startOnLoad: false,
+      theme,
+      flowchart: { htmlLabels: false },
+      mindmap: { padding: 12 },
+      sequence: { useMaxWidth: true },
+    });
   }, [theme]);
 
   useEffect(() => {
@@ -67,4 +73,3 @@ export function useMermaidPreview(code: string, theme: MermaidTheme): MermaidPre
 
   return { svg, error, isRendering, lastRenderedAt };
 }
-
