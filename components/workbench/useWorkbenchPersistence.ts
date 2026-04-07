@@ -47,7 +47,10 @@ export function useWorkbenchPersistence(params: PersistParams) {
         } else {
           setCode(DIAGRAM_TEMPLATES[0].code);
         }
-        if (typeof parsed.scale === "number" && SCALES.includes(parsed.scale as 1 | 2 | 4)) {
+        if (
+          typeof parsed.scale === "number" &&
+          SCALES.includes(parsed.scale as (typeof SCALES)[number])
+        ) {
           setScale(parsed.scale);
         }
         if (
