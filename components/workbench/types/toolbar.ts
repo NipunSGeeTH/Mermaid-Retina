@@ -9,8 +9,7 @@ export type WorkbenchToolbarProps = {
   activeDraftId: string;
   onSelectDraft: (draftId: string) => void;
   onCreateDraft: () => void;
-  onRenameDraft: () => void;
-  onDeleteDraft: () => void;
+  onDeleteDraft: (draftId: string) => void;
   onShareLink: () => void;
   onOpenGraph: () => void;
   onOpenExport: () => void;

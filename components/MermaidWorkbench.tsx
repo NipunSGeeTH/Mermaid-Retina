@@ -133,41 +133,24 @@ export default function MermaidWorkbench() {
     showToast("New draft created", "success");
   };
 
-  const handleRenameDraft = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const currentDraft = drafts.find((item) => item.id === activeDraftId);
-    if (!currentDraft) {
-      return;
-    }
-
-    const nextName = window.prompt("Draft name", currentDraft.name)?.trim();
-    if (!nextName) {
-      return;
-    }
-
-    setDrafts((prev) =>
-      prev.map((item) =>
-        item.id === activeDraftId ? { ...item, name: nextName, updatedAt: Date.now() } : item
-      )
-    );
-    showToast("Draft renamed", "success");
-  };
-
-  const handleDeleteDraft = () => {
+  const handleDeleteDraft = (draftId: string) => {
     if (drafts.length <= 1) {
       showToast("At least one draft is required", "info");
       return;
     }
 
     setDrafts((prev) => {
-      const currentIndex = prev.findIndex((item) => item.id === activeDraftId);
-      const nextDrafts = prev.filter((item) => item.id !== activeDraftId);
-      const fallbackIndex = Math.max(0, currentIndex - 1);
-      const fallbackDraft = nextDrafts[fallbackIndex] ?? nextDrafts[0];
-      setActiveDraftId(fallbackDraft.id);
-      setCode(fallbackDraft.code);
+      const currentIndex = prev.findIndex((item) => item.id === draftId);
+      const nextDrafts = prev.filter((item) => item.id !== draftId);
+
+      if (activeDraftId === draftId) {
+        const fallbackIndex = Math.max(0, currentIndex - 1);
+        const fallbackDraft = nextDrafts[fallbackIndex] ?? nextDrafts[0];
+        if (fallbackDraft) {
+          setActiveDraftId(fallbackDraft.id);
+          setCode(fallbackDraft.code);
+        }
+      }
       return nextDrafts;
     });
     showToast("Draft deleted", "success");
@@ -362,7 +345,6 @@ export default function MermaidWorkbench() {
         activeDraftId={activeDraftId}
         onSelectDraft={handleSelectDraft}
         onCreateDraft={handleCreateDraft}
-        onRenameDraft={handleRenameDraft}
         onDeleteDraft={handleDeleteDraft}
         onShareLink={handleShareLink}
         onOpenGraph={() => setGraphOpen(true)}
