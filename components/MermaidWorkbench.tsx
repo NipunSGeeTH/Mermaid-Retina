@@ -19,7 +19,7 @@ import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
 import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
-import { canvasToPngBlob, loadSvgImage, triggerDownload } from "@/components/workbench/utils";
+import { canvasToBlob, loadSvgImage, triggerDownload } from "@/components/workbench/utils";
 import type {
   AppMode,
   AppThemeName,
@@ -47,6 +47,7 @@ export default function MermaidWorkbench() {
   const [exportOpen, setExportOpen] = useState<boolean>(false);
   const [themeOpen, setThemeOpen] = useState<boolean>(false);
   const [exportType, setExportType] = useState<ExportType>("png");
+  const [exportTransparent, setExportTransparent] = useState<boolean>(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(DIAGRAM_TEMPLATES[0].id);
   const [toast, setToast] = useState<ToastState>({ open: false, message: "", severity: "info" });
   const importFileRef = useRef<HTMLInputElement | null>(null);
@@ -82,7 +83,7 @@ export default function MermaidWorkbench() {
     setToast({ open: true, message, severity });
   };
 
-  const exportPng = async () => {
+  const exportImage = async (format: "png" | "jpg") => {
     if (!svg) return;
     const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
     const svgUrl = URL.createObjectURL(svgBlob);
@@ -98,22 +99,24 @@ export default function MermaidWorkbench() {
     const context = canvas.getContext("2d");
     if (!context) throw new Error("Canvas context unavailable");
     context.clearRect(0, 0, canvas.width, canvas.height);
-    applyCanvasBackground(
-      context,
-      canvas.width,
-      canvas.height,
-      graphBackgroundStyle,
-      graphBackgroundColor,
-      appMode
-    );
+    const mustOpaque = format === "jpg";
+    const shouldDrawBackground = mustOpaque || !exportTransparent;
+    if (shouldDrawBackground) {
+      const style = mustOpaque && graphBackgroundStyle === "transparent" ? "solid" : graphBackgroundStyle;
+      const color = mustOpaque && graphBackgroundStyle === "transparent" ? "#ffffff" : graphBackgroundColor;
+      applyCanvasBackground(context, canvas.width, canvas.height, style, color, appMode);
+    }
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    triggerDownload(await canvasToPngBlob(canvas), `diagram-${scale}x.png`);
+    const blob = await canvasToBlob(canvas, format === "jpg" ? "image/jpeg" : "image/png", 0.92);
+    triggerDownload(blob, `diagram-${scale}x.${format}`);
   };
 
   const exportSelected = async () => {
     try {
       if (exportType === "png") {
-        await exportPng();
+        await exportImage("png");
+      } else if (exportType === "jpg") {
+        await exportImage("jpg");
       } else if (exportType === "svg") {
         if (!svg) return;
         triggerDownload(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }), "diagram.svg");
@@ -204,10 +207,18 @@ export default function MermaidWorkbench() {
       <ExportDialog
         open={exportOpen}
         exportType={exportType}
+        exportTransparent={exportTransparent}
         scale={scale}
         scales={SCALES}
         onClose={() => setExportOpen(false)}
-        onExportTypeChange={(event) => setExportType(event.target.value as ExportType)}
+        onExportTypeChange={(event) => {
+          const nextType = event.target.value as ExportType;
+          setExportType(nextType);
+          if (nextType === "jpg") {
+            setExportTransparent(false);
+          }
+        }}
+        onExportTransparentChange={setExportTransparent}
         onScaleChange={(event) => setScale(Number(event.target.value))}
         onConfirm={exportSelected}
       />

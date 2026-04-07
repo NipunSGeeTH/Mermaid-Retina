@@ -8,14 +8,22 @@ export function loadSvgImage(url: string): Promise<HTMLImageElement> {
 }
 
 export function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return canvasToBlob(canvas, "image/png");
+}
+
+export function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality?: number
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
-        reject(new Error("Failed to create PNG blob"));
+        reject(new Error("Failed to create image blob"));
         return;
       }
       resolve(blob);
-    }, "image/png");
+    }, type, quality);
   });
 }
 
@@ -31,4 +39,3 @@ export function triggerDownload(blob: Blob, fileName: string) {
 export function clampSplitRatio(value: number): number {
   return Math.min(75, Math.max(25, value));
 }
-

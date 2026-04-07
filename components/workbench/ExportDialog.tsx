@@ -1,9 +1,11 @@
 import {
+  Checkbox,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   FormControl,
   InputLabel,
   MenuItem,
@@ -16,10 +18,12 @@ import type { ExportType } from "@/components/workbench/types";
 type ExportDialogProps = {
   open: boolean;
   exportType: ExportType;
+  exportTransparent: boolean;
   scale: number;
   scales: readonly number[];
   onClose: () => void;
   onExportTypeChange: (event: SelectChangeEvent<ExportType>) => void;
+  onExportTransparentChange: (checked: boolean) => void;
   onScaleChange: (event: SelectChangeEvent<number>) => void;
   onConfirm: () => void;
 };
@@ -27,13 +31,17 @@ type ExportDialogProps = {
 export default function ExportDialog({
   open,
   exportType,
+  exportTransparent,
   scale,
   scales,
   onClose,
   onExportTypeChange,
+  onExportTransparentChange,
   onScaleChange,
   onConfirm,
 }: ExportDialogProps) {
+  const isImageExport = exportType === "png" || exportType === "jpg";
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle>Export Diagram</DialogTitle>
@@ -48,12 +56,13 @@ export default function ExportDialog({
               onChange={onExportTypeChange}
             >
               <MenuItem value="png">PNG Image</MenuItem>
+              <MenuItem value="jpg">JPG Image</MenuItem>
               <MenuItem value="svg">SVG Vector</MenuItem>
               <MenuItem value="mmd">Mermaid Source (.mmd)</MenuItem>
             </Select>
           </FormControl>
 
-          {exportType === "png" ? (
+          {isImageExport ? (
             <FormControl size="small" fullWidth>
               <InputLabel id="export-scale-label">Scale</InputLabel>
               <Select<number>
@@ -70,6 +79,19 @@ export default function ExportDialog({
               </Select>
             </FormControl>
           ) : null}
+
+          {isImageExport ? (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={exportTransparent}
+                  onChange={(_, checked) => onExportTransparentChange(checked)}
+                  disabled={exportType === "jpg"}
+                />
+              }
+              label="Transparent background"
+            />
+          ) : null}
         </Stack>
       </DialogContent>
       <DialogActions>
@@ -81,4 +103,3 @@ export default function ExportDialog({
     </Dialog>
   );
 }
-

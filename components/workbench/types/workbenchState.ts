@@ -30,4 +30,4 @@ export type PersistedState = {
 
 export type MobilePanelMode = "split" | "editor" | "preview";
 
-export type ExportType = "png" | "svg" | "mmd";
+export type ExportType = "png" | "jpg" | "svg" | "mmd";
