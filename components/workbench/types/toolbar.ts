@@ -4,7 +4,6 @@ export type WorkbenchToolbarProps = {
   isDesktop: boolean;
   mobilePanelMode: MobilePanelMode;
   canExport: boolean;
-  onFormatCode: () => void;
   onShareLink: () => void;
   onOpenGraph: () => void;
   onOpenExport: () => void;

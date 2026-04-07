@@ -19,27 +19,14 @@ export default function WorkbenchPanels({
   previewBackground,
   splitContainerRef,
   onCodeChange,
-  onFormatCode,
   onStartSplitDrag,
 }: WorkbenchPanelsProps) {
   const muiTheme = useTheme();
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [showFullScreenTopBar, setShowFullScreenTopBar] = useState(true);
   const editorExtensions = useMemo(
-    () => [
-      mermaid(),
-      keymap.of([
-        indentWithTab,
-        {
-          key: "Shift-Alt-f",
-          run: () => {
-            onFormatCode();
-            return true;
-          },
-        },
-      ]),
-    ],
-    [onFormatCode]
+    () => [mermaid(), keymap.of([indentWithTab])],
+    []
   );
 
   const previewContent = error ? (
@@ -84,7 +71,7 @@ export default function WorkbenchPanels({
           <Box sx={{ px: 1.5, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
             <Typography variant="subtitle2">Editor</Typography>
             <Typography variant="caption" color="text.secondary">
-              Mermaid syntax with autosave. Use Tab for indent, Shift + Alt + F to format.
+              Mermaid syntax with autosave. Use Tab for indent.
             </Typography>
           </Box>
           <Box

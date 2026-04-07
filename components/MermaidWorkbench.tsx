@@ -19,13 +19,13 @@ import {
 import ExportDialog from "@/components/workbench/ExportDialog";
 import GraphTypeDialog from "@/components/workbench/GraphTypeDialog";
 import WorkbenchPanels from "@/components/workbench/WorkbenchPanels";
+import ShareDialog from "@/components/workbench/ShareDialog";
 import WorkbenchToolbar from "@/components/workbench/WorkbenchToolbar";
 import ThemeDialog from "@/components/workbench/ThemeDialog";
 import { applyCanvasBackground, getPreviewBackgroundCss } from "@/components/workbench/graphBackground";
 import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
-import { formatMermaidCode } from "@/components/workbench/mermaidFormatter";
 import { buildShareHash, parseSharedCodeFromHash } from "@/components/workbench/shareUrl";
 import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
 import {
@@ -60,6 +60,8 @@ export default function MermaidWorkbench() {
   const [graphOpen, setGraphOpen] = useState<boolean>(false);
   const [exportOpen, setExportOpen] = useState<boolean>(false);
   const [themeOpen, setThemeOpen] = useState<boolean>(false);
+  const [shareOpen, setShareOpen] = useState<boolean>(false);
+  const [shareUrl, setShareUrl] = useState<string>("");
   const [exportType, setExportType] = useState<ExportType>("png");
   const [exportTransparent, setExportTransparent] = useState<boolean>(false);
   const [pdfSize, setPdfSize] = useState<string>("a4");
@@ -98,17 +100,7 @@ export default function MermaidWorkbench() {
     setToast({ open: true, message, severity });
   };
 
-  const handleFormatCode = () => {
-    const formattedCode = formatMermaidCode(code);
-    if (formattedCode === code) {
-      showToast("Code already formatted", "info");
-      return;
-    }
-    setCode(formattedCode);
-    showToast("Code formatted", "success");
-  };
-
-  const handleShareLink = async () => {
+  const handleShareLink = () => {
     if (typeof window === "undefined") {
       return;
     }
@@ -121,13 +113,19 @@ export default function MermaidWorkbench() {
 
     const relativeUrl = `${window.location.pathname}${window.location.search}#${shareHash}`;
     const absoluteUrl = `${window.location.origin}${relativeUrl}`;
-    window.history.replaceState(null, "", relativeUrl);
+    setShareUrl(absoluteUrl);
+    setShareOpen(true);
+  };
 
+  const handleCopyShareLink = async () => {
+    if (!shareUrl) {
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(absoluteUrl);
+      await navigator.clipboard.writeText(shareUrl);
       showToast("Share link copied", "success");
     } catch {
-      showToast("Share link ready in address bar", "info");
+      showToast("Copy failed", "error");
     }
   };
 
@@ -274,7 +272,6 @@ export default function MermaidWorkbench() {
         isDesktop={isDesktop}
         mobilePanelMode={mobilePanelMode}
         canExport={Boolean(svg || code.trim())}
-        onFormatCode={handleFormatCode}
         onShareLink={handleShareLink}
         onOpenGraph={() => setGraphOpen(true)}
         onOpenExport={() => setExportOpen(true)}
@@ -296,7 +293,6 @@ export default function MermaidWorkbench() {
           previewBackground={previewBackground}
           splitContainerRef={splitContainerRef}
           onCodeChange={setCode}
-          onFormatCode={handleFormatCode}
           onStartSplitDrag={handleStartSplitDrag}
         />
       </Box>
@@ -355,6 +351,13 @@ export default function MermaidWorkbench() {
           setGraphBackgroundStyle(event.target.value as GraphBackgroundStyle)
         }
         onGraphBackgroundColorChange={setGraphBackgroundColor}
+      />
+
+      <ShareDialog
+        open={shareOpen}
+        shareUrl={shareUrl}
+        onClose={() => setShareOpen(false)}
+        onCopy={handleCopyShareLink}
       />
 
       <Snackbar open={toast.open} autoHideDuration={2500} onClose={() => setToast((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
