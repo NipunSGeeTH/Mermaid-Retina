@@ -10,11 +10,28 @@ import {
   STORAGE_KEY,
 } from "@/components/workbench/constants";
 import { parseSharedCodeFromHash } from "@/components/workbench/shareUrl";
-import type { PersistParams, PersistedState } from "@/components/workbench/types";
+import type { DraftItem, PersistParams, PersistedState } from "@/components/workbench/types";
+
+function isValidDraft(value: unknown): value is DraftItem {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const draft = value as Partial<DraftItem>;
+  return (
+    typeof draft.id === "string" &&
+    draft.id.length > 0 &&
+    typeof draft.name === "string" &&
+    draft.name.length > 0 &&
+    typeof draft.code === "string" &&
+    typeof draft.updatedAt === "number"
+  );
+}
 
 export function useWorkbenchPersistence(params: PersistParams) {
   const {
     code,
+    drafts,
+    activeDraftId,
     theme,
     appMode,
     appTheme,
@@ -24,6 +41,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     splitRatio,
     isReady,
     setCode,
+    setDrafts,
+    setActiveDraftId,
     setTheme,
     setAppMode,
     setAppTheme,
@@ -45,13 +64,32 @@ export function useWorkbenchPersistence(params: PersistParams) {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<PersistedState>;
-        if (!hasSharedCodeInUrl) {
+
+        const validDrafts = Array.isArray(parsed.drafts)
+          ? parsed.drafts.filter((item): item is DraftItem => isValidDraft(item))
+          : [];
+
+        if (validDrafts.length > 0) {
+          setDrafts(validDrafts);
+          const restoredActiveDraftId =
+            typeof parsed.activeDraftId === "string" &&
+            validDrafts.some((item) => item.id === parsed.activeDraftId)
+              ? parsed.activeDraftId
+              : validDrafts[0].id;
+          setActiveDraftId(restoredActiveDraftId);
+
+          if (!hasSharedCodeInUrl) {
+            const activeDraft = validDrafts.find((item) => item.id === restoredActiveDraftId);
+            setCode(activeDraft?.code ?? validDrafts[0].code);
+          }
+        } else if (!hasSharedCodeInUrl) {
           if (typeof parsed.code === "string" && parsed.code.trim()) {
             setCode(parsed.code);
           } else {
             setCode(DIAGRAM_TEMPLATES[0].code);
           }
         }
+
         if (
           typeof parsed.scale === "number" &&
           SCALES.includes(parsed.scale as (typeof SCALES)[number])
@@ -107,8 +145,11 @@ export function useWorkbenchPersistence(params: PersistParams) {
     if (!isReady || typeof window === "undefined") {
       return;
     }
+
     const payload: PersistedState = {
       code,
+      drafts,
+      activeDraftId,
       theme,
       appMode,
       appTheme,
@@ -117,11 +158,18 @@ export function useWorkbenchPersistence(params: PersistParams) {
       scale,
       splitRatio,
     };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+
+    const timeoutId = window.setTimeout(() => {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }, 2000);
+
+    return () => window.clearTimeout(timeoutId);
   }, [
+    activeDraftId,
     appMode,
     appTheme,
     code,
+    drafts,
     graphBackgroundColor,
     graphBackgroundStyle,
     isReady,

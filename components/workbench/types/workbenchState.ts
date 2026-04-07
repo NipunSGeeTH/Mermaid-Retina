@@ -26,6 +26,15 @@ export type PersistedState = {
   graphBackgroundColor: string;
   scale: number;
   splitRatio: number;
+  drafts?: DraftItem[];
+  activeDraftId?: string;
+};
+
+export type DraftItem = {
+  id: string;
+  name: string;
+  code: string;
+  updatedAt: number;
 };
 
 export type MobilePanelMode = "split" | "editor" | "preview";

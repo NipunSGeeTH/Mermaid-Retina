@@ -37,14 +37,25 @@ import {
 import type {
   AppMode,
   AppThemeName,
+  DraftItem,
   ExportType,
   GraphBackgroundStyle,
   MobilePanelMode,
   ToastState,
 } from "@/components/workbench/types";
 
+function createDraft(name: string, code: string): DraftItem {
+  const now = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+  return { id: `draft-${now}-${random}`, name, code, updatedAt: now };
+}
+
+const INITIAL_DRAFT = createDraft("Draft 1", DIAGRAM_TEMPLATES[0].code);
+
 export default function MermaidWorkbench() {
   const [code, setCode] = useState<string>(DIAGRAM_TEMPLATES[0].code);
+  const [drafts, setDrafts] = useState<DraftItem[]>([INITIAL_DRAFT]);
+  const [activeDraftId, setActiveDraftId] = useState<string>(INITIAL_DRAFT.id);
   const [scale, setScale] = useState<number>(2);
   const [theme, setTheme] = useState<MermaidTheme>("dark");
   const [appMode, setAppMode] = useState<AppMode>("dark");
@@ -74,6 +85,8 @@ export default function MermaidWorkbench() {
 
   useWorkbenchPersistence({
     code,
+    drafts,
+    activeDraftId,
     theme,
     appMode,
     appTheme,
@@ -83,6 +96,8 @@ export default function MermaidWorkbench() {
     splitRatio,
     isReady,
     setCode,
+    setDrafts,
+    setActiveDraftId,
     setTheme,
     setAppMode,
     setAppTheme,
@@ -98,6 +113,64 @@ export default function MermaidWorkbench() {
 
   const showToast = (message: string, severity: ToastState["severity"]) => {
     setToast({ open: true, message, severity });
+  };
+
+  const handleSelectDraft = (draftId: string) => {
+    const nextDraft = drafts.find((item) => item.id === draftId);
+    if (!nextDraft) {
+      return;
+    }
+    setActiveDraftId(nextDraft.id);
+    setCode(nextDraft.code);
+  };
+
+  const handleCreateDraft = () => {
+    const nextNumber = drafts.length + 1;
+    const nextDraft = createDraft(`Draft ${nextNumber}`, code);
+    setDrafts((prev) => [...prev, nextDraft]);
+    setActiveDraftId(nextDraft.id);
+    setCode(nextDraft.code);
+    showToast("New draft created", "success");
+  };
+
+  const handleRenameDraft = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const currentDraft = drafts.find((item) => item.id === activeDraftId);
+    if (!currentDraft) {
+      return;
+    }
+
+    const nextName = window.prompt("Draft name", currentDraft.name)?.trim();
+    if (!nextName) {
+      return;
+    }
+
+    setDrafts((prev) =>
+      prev.map((item) =>
+        item.id === activeDraftId ? { ...item, name: nextName, updatedAt: Date.now() } : item
+      )
+    );
+    showToast("Draft renamed", "success");
+  };
+
+  const handleDeleteDraft = () => {
+    if (drafts.length <= 1) {
+      showToast("At least one draft is required", "info");
+      return;
+    }
+
+    setDrafts((prev) => {
+      const currentIndex = prev.findIndex((item) => item.id === activeDraftId);
+      const nextDrafts = prev.filter((item) => item.id !== activeDraftId);
+      const fallbackIndex = Math.max(0, currentIndex - 1);
+      const fallbackDraft = nextDrafts[fallbackIndex] ?? nextDrafts[0];
+      setActiveDraftId(fallbackDraft.id);
+      setCode(fallbackDraft.code);
+      return nextDrafts;
+    });
+    showToast("Draft deleted", "success");
   };
 
   const handleShareLink = () => {
@@ -243,6 +316,19 @@ export default function MermaidWorkbench() {
   );
 
   useEffect(() => {
+    const activeDraft = drafts.find((item) => item.id === activeDraftId);
+    if (!activeDraft || activeDraft.code === code) {
+      return;
+    }
+
+    setDrafts((prev) =>
+      prev.map((item) =>
+        item.id === activeDraftId ? { ...item, code, updatedAt: Date.now() } : item
+      )
+    );
+  }, [activeDraftId, code, drafts]);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
@@ -272,6 +358,12 @@ export default function MermaidWorkbench() {
         isDesktop={isDesktop}
         mobilePanelMode={mobilePanelMode}
         canExport={Boolean(svg || code.trim())}
+        drafts={drafts}
+        activeDraftId={activeDraftId}
+        onSelectDraft={handleSelectDraft}
+        onCreateDraft={handleCreateDraft}
+        onRenameDraft={handleRenameDraft}
+        onDeleteDraft={handleDeleteDraft}
         onShareLink={handleShareLink}
         onOpenGraph={() => setGraphOpen(true)}
         onOpenExport={() => setExportOpen(true)}
