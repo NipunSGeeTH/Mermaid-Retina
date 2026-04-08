@@ -6,6 +6,9 @@ import Providers from "./providers";
 export const metadata: Metadata = {
   title: "Mermaid Exporter",
   description: "Mermaid editor with PNG export",
+  icons: {
+    icon: "/Mermaid-Retina/favicon.svg",
+  },
 };
 
 type RootLayoutProps = {
