@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     basePath: "/Mermaid-Retina",
     assetPrefix: "/Mermaid-Retina/",
   }),
-  allowedDevOrigins: ["10.10.30.86", "*.10.10.30.86"],
+  allowedDevOrigins: ["127.0.0.1", "localhost", "10.10.30.86", "*.10.10.30.86"],
 };
 
 export default nextConfig;

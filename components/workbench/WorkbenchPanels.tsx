@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { Alert, Box, Button, Dialog, DialogContent, Paper, Stack, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -27,10 +27,17 @@ export default function WorkbenchPanels({
   const muiTheme = useTheme();
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [showFullScreenTopBar, setShowFullScreenTopBar] = useState(true);
+  const [viewport, setViewport] = useState({ x: 40, y: 40, zoom: 1 });
+  const [isPanningPreview, setIsPanningPreview] = useState(false);
+  const panOriginRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(
+    null
+  );
   const editorExtensions = useMemo(
     () => [mermaid(), keymap.of([indentWithTab])],
     []
   );
+  const MIN_ZOOM = 0.2;
+  const MAX_ZOOM = 3;
 
   const getBackgroundSize = () => {
     if (graphBackgroundStyle === "image") {
@@ -39,20 +46,154 @@ export default function WorkbenchPanels({
     return "20px 20px"; // Default for grids and patterns
   };
 
-  const previewContent = error ? (
-    <Alert severity="error" sx={{ width: "100%", whiteSpace: "pre-wrap" }}>
-      {error}
-    </Alert>
-  ) : (
+  const previewContent = (
     <Box
       sx={{
-        width: "100%",
-        display: "flex",
-        justifyContent: "center",
-        "& svg": { maxWidth: "100%", height: "auto" },
+        width: "max-content",
+        "& svg": {
+          display: "block",
+          width: "auto",
+          height: "auto",
+          maxWidth: "none",
+          maxHeight: "none",
+        },
       }}
       dangerouslySetInnerHTML={{ __html: svg }}
     />
+  );
+
+  const stopPreviewPanning = useCallback(() => {
+    setIsPanningPreview(false);
+    panOriginRef.current = null;
+  }, []);
+
+  const handlePreviewPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (error) return;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      panOriginRef.current = {
+        pointerId: event.pointerId,
+        offsetX: event.clientX - viewport.x,
+        offsetY: event.clientY - viewport.y,
+      };
+      setIsPanningPreview(true);
+    },
+    [error, viewport.x, viewport.y]
+  );
+
+  const handlePreviewPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const origin = panOriginRef.current;
+    if (!origin || origin.pointerId !== event.pointerId) return;
+    setViewport((prev) => ({
+      ...prev,
+      x: event.clientX - origin.offsetX,
+      y: event.clientY - origin.offsetY,
+    }));
+  }, []);
+
+  const handlePreviewPointerUp = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+        stopPreviewPanning();
+        return;
+      }
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      stopPreviewPanning();
+    },
+    [stopPreviewPanning]
+  );
+
+  const handlePreviewWheel = useCallback(
+    (event: React.WheelEvent<HTMLDivElement>) => {
+      if (error) return;
+      event.preventDefault();
+
+      const rect = event.currentTarget.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
+      const zoomDelta = -event.deltaY * 0.0015;
+      const zoomFactor = Math.exp(zoomDelta);
+
+      setViewport((prev) => {
+        const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev.zoom * zoomFactor));
+        const worldX = (pointerX - prev.x) / prev.zoom;
+        const worldY = (pointerY - prev.y) / prev.zoom;
+        return {
+          zoom: nextZoom,
+          x: pointerX - worldX * nextZoom,
+          y: pointerY - worldY * nextZoom,
+        };
+      });
+    },
+    [error]
+  );
+
+  const resetPreviewViewport = useCallback(() => {
+    setViewport({ x: 40, y: 40, zoom: 1 });
+    stopPreviewPanning();
+  }, [stopPreviewPanning]);
+
+  const previewViewportContent = error ? (
+    <Box
+      sx={{
+        p: 2,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-start",
+        overflow: "auto",
+        height: "100%",
+        background: previewBackground,
+        backgroundSize: getBackgroundSize(),
+      }}
+    >
+      <Alert severity="error" sx={{ width: "100%", whiteSpace: "pre-wrap" }}>
+        {error}
+      </Alert>
+    </Box>
+  ) : (
+    <Box
+      onPointerDown={handlePreviewPointerDown}
+      onPointerMove={handlePreviewPointerMove}
+      onPointerUp={handlePreviewPointerUp}
+      onPointerCancel={stopPreviewPanning}
+      onPointerLeave={handlePreviewPointerUp}
+      onWheel={handlePreviewWheel}
+      sx={{
+        position: "relative",
+        flex: 1,
+        minHeight: 0,
+        overflow: "hidden",
+        cursor: isPanningPreview ? "grabbing" : "grab",
+        touchAction: "none",
+        backgroundColor: "background.default",
+        userSelect: "none",
+      }}
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+          transformOrigin: "0 0",
+          willChange: "transform",
+        }}
+      >
+        <Box
+          sx={{
+            p: 2,
+            width: "max-content",
+            background: previewBackground,
+            backgroundSize: getBackgroundSize(),
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 1,
+          }}
+        >
+          {previewContent}
+        </Box>
+      </Box>
+    </Box>
   );
 
   return (
@@ -183,28 +324,20 @@ export default function WorkbenchPanels({
               <Box>
                 <Typography variant="subtitle2">Preview</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Real-time render. Drag the middle bar on desktop to resize.
+                  Real-time render. Drag to pan and scroll to zoom in/out.
                 </Typography>
               </Box>
-              <Button size="small" variant="outlined" onClick={() => setFullScreenOpen(true)}>
-                Full Screen
-              </Button>
+              <Stack direction="row" spacing={1}>
+                <Button size="small" variant="outlined" onClick={resetPreviewViewport}>
+                  Reset View
+                </Button>
+                <Button size="small" variant="outlined" onClick={() => setFullScreenOpen(true)}>
+                  Full Screen
+                </Button>
+              </Stack>
             </Stack>
           </Box>
-          <Box
-            sx={{
-              p: 2,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: error ? "flex-start" : "center",
-              overflow: "auto",
-              flex: 1,
-              background: previewBackground,
-              backgroundSize: getBackgroundSize(),
-            }}
-          >
-            {previewContent}
-          </Box>
+          {previewViewportContent}
         </Paper>
       ) : null}
 
@@ -242,20 +375,7 @@ export default function WorkbenchPanels({
             </Stack>
           </Box>
 
-          <DialogContent
-            sx={{
-              p: 2,
-              height: "100%",
-              background: previewBackground,
-              backgroundSize: getBackgroundSize(),
-              display: "flex",
-              justifyContent: "center",
-              alignItems: error ? "flex-start" : "center",
-              overflow: "auto",
-            }}
-          >
-            {previewContent}
-          </DialogContent>
+          <DialogContent sx={{ p: 0, height: "100%" }}>{previewViewportContent}</DialogContent>
         </Box>
       </Dialog>
     </Box>
