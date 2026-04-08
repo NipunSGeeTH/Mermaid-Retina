@@ -37,6 +37,7 @@ export function useWorkbenchPersistence(params: PersistParams) {
     appTheme,
     graphBackgroundStyle,
     graphBackgroundColor,
+    graphBackgroundImage,
     scale,
     splitRatio,
     isReady,
@@ -48,6 +49,7 @@ export function useWorkbenchPersistence(params: PersistParams) {
     setAppTheme,
     setGraphBackgroundStyle,
     setGraphBackgroundColor,
+    setGraphBackgroundImage,
     setScale,
     setSplitRatio,
     setIsReady,
@@ -119,7 +121,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
           parsed.graphBackgroundStyle === "soft-grid" ||
           parsed.graphBackgroundStyle === "dots" ||
           parsed.graphBackgroundStyle === "gradient" ||
-          parsed.graphBackgroundStyle === "custom"
+          parsed.graphBackgroundStyle === "custom" ||
+          parsed.graphBackgroundStyle === "image"
         ) {
           setGraphBackgroundStyle(parsed.graphBackgroundStyle);
         } else {
@@ -129,6 +132,9 @@ export function useWorkbenchPersistence(params: PersistParams) {
           setGraphBackgroundColor(parsed.graphBackgroundColor);
         } else {
           setGraphBackgroundColor(DEFAULT_GRAPH_BACKGROUND_COLOR);
+        }
+        if (typeof parsed.graphBackgroundImage === "string") {
+          setGraphBackgroundImage(parsed.graphBackgroundImage);
         }
         if (typeof parsed.splitRatio === "number") {
           setSplitRatio(parsed.splitRatio);
@@ -155,6 +161,7 @@ export function useWorkbenchPersistence(params: PersistParams) {
       appTheme,
       graphBackgroundStyle,
       graphBackgroundColor,
+      graphBackgroundImage,
       scale,
       splitRatio,
     };
@@ -171,6 +178,7 @@ export function useWorkbenchPersistence(params: PersistParams) {
     code,
     drafts,
     graphBackgroundColor,
+    graphBackgroundImage,
     graphBackgroundStyle,
     isReady,
     scale,

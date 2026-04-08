@@ -15,7 +15,8 @@ export type GraphBackgroundStyle =
   | "soft-grid"
   | "dots"
   | "gradient"
-  | "custom";
+  | "custom"
+  | "image";
 
 export type PersistedState = {
   code: string;
@@ -24,6 +25,7 @@ export type PersistedState = {
   appTheme: AppThemeName;
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundColor: string;
+  graphBackgroundImage?: string;
   scale: number;
   splitRatio: number;
   drafts?: DraftItem[];

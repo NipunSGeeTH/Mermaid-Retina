@@ -10,18 +10,21 @@ export const GRAPH_BACKGROUND_OPTIONS: Array<{
   { value: "dots", label: "Dots" },
   { value: "gradient", label: "Gradient" },
   { value: "custom", label: "Custom Color" },
+  { value: "image", label: "Image Upload" },
 ];
 
 export function getPreviewBackgroundCss(
   style: GraphBackgroundStyle,
   customColor: string,
-  appMode: AppMode
+  appMode: AppMode,
+  imageData?: string
 ): string {
   const base = appMode === "dark" ? "#0f172a" : "#f8fafc";
   const gridLine = appMode === "dark" ? "rgba(148,163,184,0.2)" : "rgba(100,116,139,0.15)";
   const dots = appMode === "dark" ? "rgba(148,163,184,0.22)" : "rgba(100,116,139,0.2)";
 
   if (style === "transparent") return "transparent";
+  if (style === "image" && imageData) return `url('${imageData}')`;
   if (style === "solid" || style === "custom") return customColor;
   if (style === "gradient") {
     return appMode === "dark"
@@ -40,9 +43,19 @@ export function applyCanvasBackground(
   height: number,
   style: GraphBackgroundStyle,
   customColor: string,
-  appMode: AppMode
+  appMode: AppMode,
+  imageData?: string
 ) {
   if (style === "transparent") {
+    return;
+  }
+
+  if (style === "image" && imageData) {
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, width, height);
+    };
+    img.src = imageData;
     return;
   }
 

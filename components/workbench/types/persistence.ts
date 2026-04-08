@@ -15,6 +15,7 @@ export type PersistParams = {
   appTheme: AppThemeName;
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundColor: string;
+  graphBackgroundImage: string;
   scale: number;
   splitRatio: number;
   isReady: boolean;
@@ -26,6 +27,7 @@ export type PersistParams = {
   setAppTheme: (value: AppThemeName) => void;
   setGraphBackgroundStyle: (value: GraphBackgroundStyle) => void;
   setGraphBackgroundColor: (value: string) => void;
+  setGraphBackgroundImage: (value: string) => void;
   setScale: (value: number) => void;
   setSplitRatio: (value: number) => void;
   setIsReady: (value: boolean) => void;

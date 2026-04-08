@@ -24,12 +24,14 @@ type ThemeDialogProps = {
   appTheme: AppThemeName;
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundColor: string;
+  graphBackgroundImage?: string;
   onClose: () => void;
   onThemeChange: (event: SelectChangeEvent<string>) => void;
   onAppModeChange: (event: SelectChangeEvent<string>) => void;
   onAppThemeChange: (event: SelectChangeEvent<string>) => void;
   onGraphBackgroundStyleChange: (event: SelectChangeEvent<string>) => void;
   onGraphBackgroundColorChange: (value: string) => void;
+  onGraphBackgroundImageChange?: (imageData: string) => void;
 };
 
 export default function ThemeDialog({
@@ -39,13 +41,27 @@ export default function ThemeDialog({
   appTheme,
   graphBackgroundStyle,
   graphBackgroundColor,
+  graphBackgroundImage,
   onClose,
   onThemeChange,
   onAppModeChange,
   onAppThemeChange,
   onGraphBackgroundStyleChange,
   onGraphBackgroundColorChange,
+  onGraphBackgroundImageChange,
 }: ThemeDialogProps) {
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onGraphBackgroundImageChange) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target?.result as string;
+        onGraphBackgroundImageChange(imageData);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle>Theme & Colors</DialogTitle>
@@ -121,6 +137,22 @@ export default function ThemeDialog({
               onChange={(event) => onGraphBackgroundColorChange(event.target.value)}
               InputLabelProps={{ shrink: true }}
             />
+          ) : null}
+
+          {graphBackgroundStyle === "image" ? (
+            <Button
+              variant="outlined"
+              component="label"
+              size="small"
+            >
+              {graphBackgroundImage ? "Change Image" : "Upload Image"}
+              <input
+                hidden
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+            </Button>
           ) : null}
         </Stack>
       </DialogContent>
