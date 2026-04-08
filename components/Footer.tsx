@@ -17,8 +17,8 @@ export default function Footer() {
         color: "text.secondary",
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1, mb: 0.5 }}>
-        <Typography variant="caption">© {currentYear} </Typography>
+      <Typography variant="caption" sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75 }}>
+        © {currentYear} NipunSGeeTH
         <Link
           href={githubUrl}
           target="_blank"
@@ -32,8 +32,6 @@ export default function Footer() {
         >
           <GitHubIcon sx={{ fontSize: "1rem" }} />
         </Link>
-      </Box>
-      <Typography variant="caption">
         <Link
           href={githubUrl}
           target="_blank"
