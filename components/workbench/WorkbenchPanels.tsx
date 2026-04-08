@@ -17,6 +17,9 @@ export default function WorkbenchPanels({
   error,
   svg,
   previewBackground,
+  graphBackgroundStyle,
+  graphBackgroundImageWidth,
+  graphBackgroundImageHeight,
   splitContainerRef,
   onCodeChange,
   onStartSplitDrag,
@@ -28,6 +31,13 @@ export default function WorkbenchPanels({
     () => [mermaid(), keymap.of([indentWithTab])],
     []
   );
+
+  const getBackgroundSize = () => {
+    if (graphBackgroundStyle === "image") {
+      return `${graphBackgroundImageWidth}px ${graphBackgroundImageHeight}px`;
+    }
+    return "20px 20px"; // Default for grids and patterns
+  };
 
   const previewContent = error ? (
     <Alert severity="error" sx={{ width: "100%", whiteSpace: "pre-wrap" }}>
@@ -190,7 +200,7 @@ export default function WorkbenchPanels({
               overflow: "auto",
               flex: 1,
               background: previewBackground,
-              backgroundSize: "20px 20px",
+              backgroundSize: getBackgroundSize(),
             }}
           >
             {previewContent}
@@ -237,7 +247,7 @@ export default function WorkbenchPanels({
               p: 2,
               height: "100%",
               background: previewBackground,
-              backgroundSize: "20px 20px",
+              backgroundSize: getBackgroundSize(),
               display: "flex",
               justifyContent: "center",
               alignItems: error ? "flex-start" : "center",

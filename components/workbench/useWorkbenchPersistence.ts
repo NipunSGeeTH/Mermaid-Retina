@@ -38,6 +38,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     graphBackgroundStyle,
     graphBackgroundColor,
     graphBackgroundImage,
+    graphBackgroundImageWidth,
+    graphBackgroundImageHeight,
     scale,
     splitRatio,
     isReady,
@@ -50,6 +52,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     setGraphBackgroundStyle,
     setGraphBackgroundColor,
     setGraphBackgroundImage,
+    setGraphBackgroundImageWidth,
+    setGraphBackgroundImageHeight,
     setScale,
     setSplitRatio,
     setIsReady,
@@ -136,6 +140,16 @@ export function useWorkbenchPersistence(params: PersistParams) {
         if (typeof parsed.graphBackgroundImage === "string") {
           setGraphBackgroundImage(parsed.graphBackgroundImage);
         }
+        if (typeof parsed.graphBackgroundImageWidth === "number") {
+          setGraphBackgroundImageWidth(parsed.graphBackgroundImageWidth);
+        } else {
+          setGraphBackgroundImageWidth(800);
+        }
+        if (typeof parsed.graphBackgroundImageHeight === "number") {
+          setGraphBackgroundImageHeight(parsed.graphBackgroundImageHeight);
+        } else {
+          setGraphBackgroundImageHeight(600);
+        }
         if (typeof parsed.splitRatio === "number") {
           setSplitRatio(parsed.splitRatio);
         }
@@ -162,6 +176,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
       graphBackgroundStyle,
       graphBackgroundColor,
       graphBackgroundImage,
+      graphBackgroundImageWidth,
+      graphBackgroundImageHeight,
       scale,
       splitRatio,
     };
@@ -179,6 +195,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     drafts,
     graphBackgroundColor,
     graphBackgroundImage,
+    graphBackgroundImageHeight,
+    graphBackgroundImageWidth,
     graphBackgroundStyle,
     isReady,
     scale,

@@ -26,6 +26,8 @@ export type PersistedState = {
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundColor: string;
   graphBackgroundImage?: string;
+  graphBackgroundImageWidth?: number;
+  graphBackgroundImageHeight?: number;
   scale: number;
   splitRatio: number;
   drafts?: DraftItem[];

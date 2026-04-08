@@ -17,7 +17,9 @@ export function getPreviewBackgroundCss(
   style: GraphBackgroundStyle,
   customColor: string,
   appMode: AppMode,
-  imageData?: string
+  imageData?: string,
+  imageWidth?: number,
+  imageHeight?: number
 ): string {
   const base = appMode === "dark" ? "#0f172a" : "#f8fafc";
   const gridLine = appMode === "dark" ? "rgba(148,163,184,0.2)" : "rgba(100,116,139,0.15)";
@@ -44,72 +46,87 @@ export function applyCanvasBackground(
   style: GraphBackgroundStyle,
   customColor: string,
   appMode: AppMode,
-  imageData?: string
-) {
-  if (style === "transparent") {
-    return;
-  }
-
-  if (style === "image" && imageData) {
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, width, height);
-    };
-    img.src = imageData;
-    return;
-  }
-
-  if (style === "solid" || style === "custom") {
-    ctx.fillStyle = customColor;
-    ctx.fillRect(0, 0, width, height);
-    return;
-  }
-
-  if (style === "gradient") {
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
-    if (appMode === "dark") {
-      gradient.addColorStop(0, "#1e293b");
-      gradient.addColorStop(1, "#0f172a");
-    } else {
-      gradient.addColorStop(0, "#ffffff");
-      gradient.addColorStop(1, "#e2e8f0");
+  imageData?: string,
+  imageWidth?: number,
+  imageHeight?: number
+): Promise<void> {
+  return new Promise((resolve) => {
+    if (style === "transparent") {
+      resolve();
+      return;
     }
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-    return;
-  }
 
-  const base = appMode === "dark" ? "#0f172a" : "#f8fafc";
-  ctx.fillStyle = base;
-  ctx.fillRect(0, 0, width, height);
+    if (style === "image" && imageData) {
+      const img = new Image();
+      img.onload = () => {
+        const finalWidth = imageWidth || width;
+        const finalHeight = imageHeight || height;
+        ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+        resolve();
+      };
+      img.onerror = () => {
+        resolve(); // Resolve even if image fails to load
+      };
+      img.src = imageData;
+      return;
+    }
 
-  if (style === "dots") {
-    const dot = appMode === "dark" ? "rgba(148,163,184,0.22)" : "rgba(100,116,139,0.2)";
-    ctx.fillStyle = dot;
-    for (let y = 12; y < height; y += 16) {
-      for (let x = 12; x < width; x += 16) {
-        ctx.beginPath();
-        ctx.arc(x, y, 1.2, 0, Math.PI * 2);
-        ctx.fill();
+    if (style === "solid" || style === "custom") {
+      ctx.fillStyle = customColor;
+      ctx.fillRect(0, 0, width, height);
+      resolve();
+      return;
+    }
+
+    if (style === "gradient") {
+      const gradient = ctx.createLinearGradient(0, 0, width, height);
+      if (appMode === "dark") {
+        gradient.addColorStop(0, "#1e293b");
+        gradient.addColorStop(1, "#0f172a");
+      } else {
+        gradient.addColorStop(0, "#ffffff");
+        gradient.addColorStop(1, "#e2e8f0");
       }
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      resolve();
+      return;
     }
-    return;
-  }
 
-  const gridLine = appMode === "dark" ? "rgba(148,163,184,0.2)" : "rgba(100,116,139,0.15)";
-  ctx.strokeStyle = gridLine;
-  ctx.lineWidth = 1;
-  for (let y = 0; y <= height; y += 20) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-  for (let x = 0; x <= width; x += 20) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
+    const base = appMode === "dark" ? "#0f172a" : "#f8fafc";
+    ctx.fillStyle = base;
+    ctx.fillRect(0, 0, width, height);
+
+    if (style === "dots") {
+      const dot = appMode === "dark" ? "rgba(148,163,184,0.22)" : "rgba(100,116,139,0.2)";
+      ctx.fillStyle = dot;
+      for (let y = 12; y < height; y += 16) {
+        for (let x = 12; x < width; x += 16) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      resolve();
+      return;
+    }
+
+    const gridLine = appMode === "dark" ? "rgba(148,163,184,0.2)" : "rgba(100,116,139,0.15)";
+    ctx.strokeStyle = gridLine;
+    ctx.lineWidth = 1;
+    for (let y = 0; y <= height; y += 20) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    for (let x = 0; x <= width; x += 20) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    resolve();
+  });
 }
 

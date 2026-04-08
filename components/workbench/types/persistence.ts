@@ -16,6 +16,8 @@ export type PersistParams = {
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundColor: string;
   graphBackgroundImage: string;
+  graphBackgroundImageWidth: number;
+  graphBackgroundImageHeight: number;
   scale: number;
   splitRatio: number;
   isReady: boolean;
@@ -28,6 +30,8 @@ export type PersistParams = {
   setGraphBackgroundStyle: (value: GraphBackgroundStyle) => void;
   setGraphBackgroundColor: (value: string) => void;
   setGraphBackgroundImage: (value: string) => void;
+  setGraphBackgroundImageWidth: (value: number) => void;
+  setGraphBackgroundImageHeight: (value: number) => void;
   setScale: (value: number) => void;
   setSplitRatio: (value: number) => void;
   setIsReady: (value: boolean) => void;

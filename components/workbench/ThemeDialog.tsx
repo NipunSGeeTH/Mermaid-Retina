@@ -8,8 +8,10 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Slider,
   Stack,
   TextField,
+  Typography,
   type SelectChangeEvent,
 } from "@mui/material";
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
@@ -25,6 +27,8 @@ type ThemeDialogProps = {
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundColor: string;
   graphBackgroundImage?: string;
+  graphBackgroundImageWidth: number;
+  graphBackgroundImageHeight: number;
   onClose: () => void;
   onThemeChange: (event: SelectChangeEvent<string>) => void;
   onAppModeChange: (event: SelectChangeEvent<string>) => void;
@@ -32,6 +36,8 @@ type ThemeDialogProps = {
   onGraphBackgroundStyleChange: (event: SelectChangeEvent<string>) => void;
   onGraphBackgroundColorChange: (value: string) => void;
   onGraphBackgroundImageChange?: (imageData: string) => void;
+  onGraphBackgroundImageWidthChange?: (value: number) => void;
+  onGraphBackgroundImageHeightChange?: (value: number) => void;
 };
 
 export default function ThemeDialog({
@@ -42,6 +48,8 @@ export default function ThemeDialog({
   graphBackgroundStyle,
   graphBackgroundColor,
   graphBackgroundImage,
+  graphBackgroundImageWidth,
+  graphBackgroundImageHeight,
   onClose,
   onThemeChange,
   onAppModeChange,
@@ -49,6 +57,8 @@ export default function ThemeDialog({
   onGraphBackgroundStyleChange,
   onGraphBackgroundColorChange,
   onGraphBackgroundImageChange,
+  onGraphBackgroundImageWidthChange,
+  onGraphBackgroundImageHeightChange,
 }: ThemeDialogProps) {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -140,19 +150,55 @@ export default function ThemeDialog({
           ) : null}
 
           {graphBackgroundStyle === "image" ? (
-            <Button
-              variant="outlined"
-              component="label"
-              size="small"
-            >
-              {graphBackgroundImage ? "Change Image" : "Upload Image"}
-              <input
-                hidden
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
-            </Button>
+            <>
+              <Button
+                variant="outlined"
+                component="label"
+                size="small"
+              >
+                {graphBackgroundImage ? "Change Image" : "Upload Image"}
+                <input
+                  hidden
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </Button>
+              {graphBackgroundImage && (
+                <>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2">Width: {graphBackgroundImageWidth}px</Typography>
+                    </Stack>
+                    <Slider
+                      min={100}
+                      max={5000}
+                      step={10}
+                      value={graphBackgroundImageWidth}
+                      onChange={(_, value) =>
+                        onGraphBackgroundImageWidthChange?.(value as number)
+                      }
+                      sx={{ width: "100%" }}
+                    />
+                  </Stack>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2">Height: {graphBackgroundImageHeight}px</Typography>
+                    </Stack>
+                    <Slider
+                      min={100}
+                      max={5000}
+                      step={10}
+                      value={graphBackgroundImageHeight}
+                      onChange={(_, value) =>
+                        onGraphBackgroundImageHeightChange?.(value as number)
+                      }
+                      sx={{ width: "100%" }}
+                    />
+                  </Stack>
+                </>
+              )}
+            </>
           ) : null}
         </Stack>
       </DialogContent>

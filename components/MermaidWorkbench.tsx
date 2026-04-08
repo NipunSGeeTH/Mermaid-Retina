@@ -68,6 +68,8 @@ export default function MermaidWorkbench() {
     DEFAULT_GRAPH_BACKGROUND_COLOR
   );
   const [graphBackgroundImage, setGraphBackgroundImage] = useState<string>("");
+  const [graphBackgroundImageWidth, setGraphBackgroundImageWidth] = useState<number>(800);
+  const [graphBackgroundImageHeight, setGraphBackgroundImageHeight] = useState<number>(600);
   const [mobilePanelMode, setMobilePanelMode] = useState<MobilePanelMode>("split");
   const [isReady, setIsReady] = useState<boolean>(false);
   const [graphOpen, setGraphOpen] = useState<boolean>(false);
@@ -95,6 +97,8 @@ export default function MermaidWorkbench() {
     graphBackgroundStyle,
     graphBackgroundColor,
     graphBackgroundImage,
+    graphBackgroundImageWidth,
+    graphBackgroundImageHeight,
     scale,
     splitRatio,
     isReady,
@@ -107,6 +111,8 @@ export default function MermaidWorkbench() {
     setGraphBackgroundStyle,
     setGraphBackgroundColor,
     setGraphBackgroundImage,
+    setGraphBackgroundImageWidth,
+    setGraphBackgroundImageHeight,
     setScale,
     setSplitRatio,
     setIsReady,
@@ -210,7 +216,7 @@ export default function MermaidWorkbench() {
     if (shouldDrawBackground) {
       const style = mustOpaque && graphBackgroundStyle === "transparent" ? "solid" : graphBackgroundStyle;
       const color = mustOpaque && graphBackgroundStyle === "transparent" ? "#ffffff" : graphBackgroundColor;
-      applyCanvasBackground(context, canvas.width, canvas.height, style, color, appMode, graphBackgroundImage);
+      await applyCanvasBackground(context, canvas.width, canvas.height, style, color, appMode, graphBackgroundImage, graphBackgroundImageWidth, graphBackgroundImageHeight);
     }
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const blob = await canvasToBlob(canvas, format === "jpg" ? "image/jpeg" : "image/png", 0.92);
@@ -233,8 +239,12 @@ export default function MermaidWorkbench() {
     canvas.height = Math.max(1, Math.round(image.height * scale));
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas context unavailable");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Apply background with support for images
+    const style = graphBackgroundStyle === "transparent" ? "solid" : graphBackgroundStyle;
+    const color = graphBackgroundStyle === "transparent" ? "#ffffff" : graphBackgroundColor;
+    await applyCanvasBackground(ctx, canvas.width, canvas.height, style, color, appMode, graphBackgroundImage, graphBackgroundImageWidth, graphBackgroundImageHeight);
+    
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
     const imageData = canvas.toDataURL("image/jpeg", 0.95);
@@ -298,8 +308,8 @@ export default function MermaidWorkbench() {
   const handleAppThemeChange = (event: SelectChangeEvent<string>) => setAppTheme(event.target.value as AppThemeName);
   const uiTheme = useMemo(() => buildWorkbenchTheme(appTheme, appMode), [appMode, appTheme]);
   const previewBackground = useMemo(
-    () => getPreviewBackgroundCss(graphBackgroundStyle, graphBackgroundColor, appMode, graphBackgroundImage),
-    [appMode, graphBackgroundColor, graphBackgroundStyle, graphBackgroundImage]
+    () => getPreviewBackgroundCss(graphBackgroundStyle, graphBackgroundColor, appMode, graphBackgroundImage, graphBackgroundImageWidth, graphBackgroundImageHeight),
+    [appMode, graphBackgroundColor, graphBackgroundStyle, graphBackgroundImage, graphBackgroundImageWidth, graphBackgroundImageHeight]
   );
 
   useEffect(() => {
@@ -369,6 +379,9 @@ export default function MermaidWorkbench() {
           error={error}
           svg={svg}
           previewBackground={previewBackground}
+          graphBackgroundStyle={graphBackgroundStyle}
+          graphBackgroundImageWidth={graphBackgroundImageWidth}
+          graphBackgroundImageHeight={graphBackgroundImageHeight}
           splitContainerRef={splitContainerRef}
           onCodeChange={setCode}
           onStartSplitDrag={handleStartSplitDrag}
@@ -422,6 +435,8 @@ export default function MermaidWorkbench() {
         graphBackgroundStyle={graphBackgroundStyle}
         graphBackgroundColor={graphBackgroundColor}
         graphBackgroundImage={graphBackgroundImage}
+        graphBackgroundImageWidth={graphBackgroundImageWidth}
+        graphBackgroundImageHeight={graphBackgroundImageHeight}
         onClose={() => setThemeOpen(false)}
         onThemeChange={handleThemeChange}
         onAppModeChange={handleAppModeChange}
@@ -431,6 +446,8 @@ export default function MermaidWorkbench() {
         }
         onGraphBackgroundColorChange={setGraphBackgroundColor}
         onGraphBackgroundImageChange={setGraphBackgroundImage}
+        onGraphBackgroundImageWidthChange={setGraphBackgroundImageWidth}
+        onGraphBackgroundImageHeightChange={setGraphBackgroundImageHeight}
       />
 
       <ShareDialog
