@@ -22,6 +22,7 @@ import WorkbenchPanels from "@/components/workbench/WorkbenchPanels";
 import ShareDialog from "@/components/workbench/ShareDialog";
 import WorkbenchToolbar from "@/components/workbench/WorkbenchToolbar";
 import ThemeDialog from "@/components/workbench/ThemeDialog";
+import Footer from "@/components/Footer";
 import { applyCanvasBackground, getPreviewBackgroundCss } from "@/components/workbench/graphBackground";
 import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
@@ -433,6 +434,8 @@ export default function MermaidWorkbench() {
         onClose={() => setShareOpen(false)}
         onCopy={handleCopyShareLink}
       />
+
+      <Footer />
 
       <Snackbar open={toast.open} autoHideDuration={2500} onClose={() => setToast((prev) => ({ ...prev, open: false }))} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         <Alert severity={toast.severity} variant="filled" onClose={() => setToast((prev) => ({ ...prev, open: false }))}>

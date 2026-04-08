@@ -1,10 +1,14 @@
 import type { NextConfig } from "next";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const nextConfig: NextConfig = {
   output: "export",
   distDir: "out",
-  basePath: "/Mermaid-Retina",
-  assetPrefix: "/Mermaid-Retina/",
+  ...(isProduction && {
+    basePath: "/Mermaid-Retina",
+    assetPrefix: "/Mermaid-Retina/",
+  }),
   allowedDevOrigins: ["10.10.30.86", "*.10.10.30.86"],
 };
 
