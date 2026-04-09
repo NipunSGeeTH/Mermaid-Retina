@@ -11,12 +11,20 @@ type MermaidPreviewState = {
   lastRenderedAt: string;
 };
 
+type CachedRender = {
+  svg: string;
+  renderedAt: string;
+};
+
+const MAX_CACHE_ENTRIES = 30;
+
 export function useMermaidPreview(code: string, theme: MermaidTheme): MermaidPreviewState {
   const [svg, setSvg] = useState<string>("");
   const [error, setError] = useState<string>("");
   const [isRendering, setIsRendering] = useState<boolean>(false);
   const [lastRenderedAt, setLastRenderedAt] = useState<string>("");
   const renderTokenRef = useRef<number>(0);
+  const renderCacheRef = useRef<Map<string, CachedRender>>(new Map());
 
   useEffect(() => {
     mermaid.initialize({
@@ -29,28 +37,48 @@ export function useMermaidPreview(code: string, theme: MermaidTheme): MermaidPre
   }, [theme]);
 
   useEffect(() => {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setSvg("");
+      setError("");
+      setIsRendering(false);
+      return;
+    }
+
+    const token = ++renderTokenRef.current;
+    const cacheKey = `${theme}::${trimmed}`;
+    const cached = renderCacheRef.current.get(cacheKey);
+    if (cached) {
+      setSvg(cached.svg);
+      setError("");
+      setIsRendering(false);
+      setLastRenderedAt(cached.renderedAt);
+      return;
+    }
+
+    setIsRendering(true);
+
     const timer = setTimeout(() => {
       void (async () => {
-        const trimmed = code.trim();
-        if (!trimmed) {
-          setSvg("");
-          setError("");
-          setIsRendering(false);
-          return;
-        }
-
-        const token = ++renderTokenRef.current;
-        setIsRendering(true);
-
         try {
           const id = `mermaid-${token}`;
           const { svg: rendered } = await mermaid.render(id, trimmed);
           if (token !== renderTokenRef.current) {
             return;
           }
+
+          const renderedAt = new Date().toLocaleTimeString();
+          renderCacheRef.current.set(cacheKey, { svg: rendered, renderedAt });
+          if (renderCacheRef.current.size > MAX_CACHE_ENTRIES) {
+            const oldestKey = renderCacheRef.current.keys().next().value;
+            if (oldestKey) {
+              renderCacheRef.current.delete(oldestKey);
+            }
+          }
+
           setSvg(rendered);
           setError("");
-          setLastRenderedAt(new Date().toLocaleTimeString());
+          setLastRenderedAt(renderedAt);
         } catch (renderError: unknown) {
           if (token === renderTokenRef.current) {
             setSvg("");

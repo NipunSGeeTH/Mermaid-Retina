@@ -84,7 +84,7 @@ export default function MermaidWorkbench() {
   const [toast, setToast] = useState<ToastState>({ open: false, message: "", severity: "info" });
   const importFileRef = useRef<HTMLInputElement | null>(null);
 
-  const { svg, error } = useMermaidPreview(code, theme);
+  const { svg, error, isRendering } = useMermaidPreview(code, theme);
   const { isDesktop, splitRatio, isDraggingSplit, splitContainerRef, startSplitDrag, setSplitRatio } = useSplitLayout(50);
 
   useWorkbenchPersistence({
@@ -378,6 +378,7 @@ export default function MermaidWorkbench() {
           code={code}
           error={error}
           svg={svg}
+          isRendering={isRendering}
           previewBackground={previewBackground}
           graphBackgroundStyle={graphBackgroundStyle}
           graphBackgroundImageWidth={graphBackgroundImageWidth}

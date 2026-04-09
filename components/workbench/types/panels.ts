@@ -10,6 +10,7 @@ export type WorkbenchPanelsProps = {
   code: string;
   error: string;
   svg: string;
+  isRendering: boolean;
   previewBackground: string;
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundImageWidth: number;

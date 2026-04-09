@@ -1,6 +1,16 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
-import { Alert, Box, Button, Dialog, DialogContent, Paper, Stack, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { indentWithTab } from "@codemirror/commands";
 import { keymap } from "@codemirror/view";
@@ -16,6 +26,7 @@ export default function WorkbenchPanels({
   code,
   error,
   svg,
+  isRendering,
   previewBackground,
   graphBackgroundStyle,
   graphBackgroundImageWidth,
@@ -164,6 +175,44 @@ export default function WorkbenchPanels({
       <Alert severity="error" sx={{ width: "100%", whiteSpace: "pre-wrap" }}>
         {error}
       </Alert>
+    </Box>
+  ) : !svg.trim() ? (
+    <Box
+      sx={{
+        p: 2,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        overflow: "auto",
+        height: "100%",
+        background: previewBackground,
+        backgroundSize: getBackgroundSize(),
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2.5,
+          width: "100%",
+          maxWidth: 420,
+          border: "1px solid",
+          borderColor: "divider",
+          textAlign: "center",
+        }}
+      >
+        {isRendering ? (
+          <Stack spacing={1.25} alignItems="center">
+            <CircularProgress size={22} />
+            <Typography variant="body2" color="text.secondary">
+              Rendering graph...
+            </Typography>
+          </Stack>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Enter Mermaid code to preview your graph.
+          </Typography>
+        )}
+      </Paper>
     </Box>
   ) : !isDesktop ? (
     <Box
@@ -367,7 +416,9 @@ export default function WorkbenchPanels({
               <Box>
                 <Typography variant="subtitle2">Preview</Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Real-time render. Drag to pan and scroll to zoom in/out.
+                  {isRendering
+                    ? "Rendering graph..."
+                    : "Real-time render. Drag to pan and scroll to zoom in/out."}
                 </Typography>
               </Box>
               <Stack direction="row" spacing={1}>
