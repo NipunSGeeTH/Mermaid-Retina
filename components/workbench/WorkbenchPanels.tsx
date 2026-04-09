@@ -50,7 +50,7 @@ export default function WorkbenchPanels({
     []
   );
   const MIN_ZOOM = 0.2;
-  const MAX_ZOOM = 5;
+  const MAX_ZOOM = 15;
 
   const getBackgroundSize = () => {
     if (graphBackgroundStyle === "image") {
@@ -491,7 +491,21 @@ export default function WorkbenchPanels({
             </Stack>
           </Box>
 
-          <DialogContent sx={{ p: 0, height: "100%" }}>{previewViewportContent}</DialogContent>
+          <DialogContent
+            sx={{
+              p: 0,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              minHeight: 0,
+              "& > *": {
+                flex: 1,
+                minHeight: 0,
+              },
+            }}
+          >
+            {previewViewportContent}
+          </DialogContent>
         </Box>
       </Dialog>
 
