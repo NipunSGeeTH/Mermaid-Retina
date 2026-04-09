@@ -46,7 +46,7 @@ export default function WorkbenchPanels({
     return "20px 20px"; // Default for grids and patterns
   };
 
-  const previewContent = (
+  const desktopPreviewContent = (
     <Box
       sx={{
         width: "max-content",
@@ -56,6 +56,21 @@ export default function WorkbenchPanels({
           height: "auto",
           maxWidth: "none",
           maxHeight: "none",
+        },
+      }}
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+
+  const mobilePreviewContent = (
+    <Box
+      sx={{
+        width: "100%",
+        "& svg": {
+          display: "block",
+          width: "100%",
+          height: "auto",
+          maxWidth: "100%",
         },
       }}
       dangerouslySetInnerHTML={{ __html: svg }}
@@ -150,6 +165,29 @@ export default function WorkbenchPanels({
         {error}
       </Alert>
     </Box>
+  ) : !isDesktop ? (
+    <Box
+      sx={{
+        p: 2,
+        overflow: "auto",
+        flex: 1,
+        minHeight: 0,
+        backgroundColor: "background.default",
+      }}
+    >
+      <Box
+        sx={{
+          p: 2,
+          background: previewBackground,
+          backgroundSize: getBackgroundSize(),
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 1,
+        }}
+      >
+        {mobilePreviewContent}
+      </Box>
+    </Box>
   ) : (
     <Box
       onPointerDown={handlePreviewPointerDown}
@@ -190,11 +228,15 @@ export default function WorkbenchPanels({
             borderRadius: 1,
           }}
         >
-          {previewContent}
+          {desktopPreviewContent}
         </Box>
       </Box>
     </Box>
   );
+
+  const mobileGridRows = showEditorPanel && showPreviewPanel
+    ? "minmax(0, 1fr) minmax(0, 1fr)"
+    : "minmax(0, 1fr)";
 
   return (
     <Box
@@ -202,6 +244,7 @@ export default function WorkbenchPanels({
       sx={{
         display: "grid",
         gridTemplateColumns: isDesktop ? `${splitRatio}fr 10px ${100 - splitRatio}fr` : "1fr",
+        gridTemplateRows: isDesktop ? "1fr" : mobileGridRows,
         gap: isDesktop ? 0 : 1.5,
         height: "100%",
         minHeight: 0,
