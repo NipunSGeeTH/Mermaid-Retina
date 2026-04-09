@@ -32,6 +32,8 @@ export type PersistedState = {
   splitRatio: number;
   drafts?: DraftItem[];
   activeDraftId?: string;
+  snapshots?: SnapshotItem[];
+  accessibilityMode?: AccessibilityMode;
 };
 
 export type DraftItem = {
@@ -42,8 +44,16 @@ export type DraftItem = {
 };
 
 export type MobilePanelMode = "split" | "editor" | "preview";
+export type AccessibilityMode = "standard" | "enhanced" | "high-contrast";
 
 export type ExportType = "png" | "jpg" | "pdf" | "svg" | "mmd";
+
+export type SnapshotItem = {
+  id: string;
+  code: string;
+  createdAt: number;
+  reason: "auto" | "manual";
+};
 
 export type RenderSource = "cache-memory" | "cache-storage" | "worker" | "main-thread" | "none";
 

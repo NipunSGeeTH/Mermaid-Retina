@@ -1,5 +1,5 @@
 import { createTheme } from "@mui/material";
-import type { AppMode, AppThemeName } from "@/components/workbench/types";
+import type { AccessibilityMode, AppMode, AppThemeName } from "@/components/workbench/types";
 
 type ModePalette = {
   primaryMain: string;
@@ -41,8 +41,14 @@ export const APP_THEME_OPTIONS = Object.entries(PRESETS).map(([value, preset]) =
   label: preset.label,
 }));
 
-export function buildWorkbenchTheme(appTheme: AppThemeName, appMode: AppMode) {
+export function buildWorkbenchTheme(
+  appTheme: AppThemeName,
+  appMode: AppMode,
+  accessibilityMode: AccessibilityMode
+) {
   const preset = PRESETS[appTheme][appMode];
+  const isHighContrast = accessibilityMode === "high-contrast";
+  const isEnhanced = accessibilityMode === "enhanced" || isHighContrast;
   return createTheme({
     palette: {
       mode: appMode,
@@ -51,12 +57,28 @@ export function buildWorkbenchTheme(appTheme: AppThemeName, appMode: AppMode) {
         default: preset.backgroundDefault,
         paper: preset.backgroundPaper,
       },
+      contrastThreshold: isHighContrast ? 7 : 3,
     },
     shape: { borderRadius: 10 },
     typography: {
       fontFamily:
         "\"Fira Code\", \"JetBrains Mono\", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      fontSize: isHighContrast ? 18 : isEnhanced ? 16 : 14,
+    },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          "*:focus-visible": {
+            outline: isHighContrast ? "3px solid #ffbf47" : "2px solid #60a5fa",
+            outlineOffset: "2px",
+          },
+        },
+      },
+      MuiButtonBase: {
+        defaultProps: {
+          disableRipple: isHighContrast,
+        },
+      },
     },
   });
 }
-

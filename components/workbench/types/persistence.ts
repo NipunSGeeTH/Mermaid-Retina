@@ -1,9 +1,11 @@
 import type { MermaidTheme } from "@/lib/mermaidThemes";
 import type {
+  AccessibilityMode,
   AppMode,
   AppThemeName,
   DraftItem,
   GraphBackgroundStyle,
+  SnapshotItem,
 } from "@/components/workbench/types/workbenchState";
 
 export type PersistParams = {
@@ -20,6 +22,8 @@ export type PersistParams = {
   graphBackgroundImageHeight: number;
   scale: number;
   splitRatio: number;
+  snapshots: SnapshotItem[];
+  accessibilityMode: AccessibilityMode;
   isReady: boolean;
   setCode: (value: string) => void;
   setDrafts: (value: DraftItem[]) => void;
@@ -34,5 +38,7 @@ export type PersistParams = {
   setGraphBackgroundImageHeight: (value: number) => void;
   setScale: (value: number) => void;
   setSplitRatio: (value: number) => void;
+  setSnapshots: (value: SnapshotItem[]) => void;
+  setAccessibilityMode: (value: AccessibilityMode) => void;
   setIsReady: (value: boolean) => void;
 };

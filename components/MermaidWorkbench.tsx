@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -18,6 +19,7 @@ import {
 } from "@/components/workbench/constants";
 import ExportDialog from "@/components/workbench/ExportDialog";
 import GraphTypeDialog from "@/components/workbench/GraphTypeDialog";
+import SnapshotDialog from "@/components/workbench/SnapshotDialog";
 import WorkbenchPanels from "@/components/workbench/WorkbenchPanels";
 import ShareDialog from "@/components/workbench/ShareDialog";
 import WorkbenchToolbar from "@/components/workbench/WorkbenchToolbar";
@@ -41,12 +43,14 @@ import {
   triggerDownload,
 } from "@/components/workbench/utils";
 import type {
+  AccessibilityMode,
   AppMode,
   AppThemeName,
   DraftItem,
   ExportType,
   GraphBackgroundStyle,
   MobilePanelMode,
+  SnapshotItem,
   ToastState,
 } from "@/components/workbench/types";
 
@@ -58,6 +62,8 @@ function createDraft(name: string, code: string): DraftItem {
 
 const INITIAL_DRAFT = createDraft("Draft 1", DIAGRAM_TEMPLATES[0].code);
 const MAX_SHARE_URL_LENGTH = 3500;
+const MAX_SNAPSHOTS = 40;
+const AUTO_SNAPSHOT_DELAY_MS = 12000;
 
 export default function MermaidWorkbench() {
   const [code, setCode] = useState<string>(DIAGRAM_TEMPLATES[0].code);
@@ -77,11 +83,14 @@ export default function MermaidWorkbench() {
   const [graphBackgroundImageWidth, setGraphBackgroundImageWidth] = useState<number>(800);
   const [graphBackgroundImageHeight, setGraphBackgroundImageHeight] = useState<number>(600);
   const [mobilePanelMode, setMobilePanelMode] = useState<MobilePanelMode>("split");
+  const [accessibilityMode, setAccessibilityMode] = useState<AccessibilityMode>("standard");
+  const [snapshots, setSnapshots] = useState<SnapshotItem[]>([]);
   const [isReady, setIsReady] = useState<boolean>(false);
   const [graphOpen, setGraphOpen] = useState<boolean>(false);
   const [exportOpen, setExportOpen] = useState<boolean>(false);
   const [themeOpen, setThemeOpen] = useState<boolean>(false);
   const [shareOpen, setShareOpen] = useState<boolean>(false);
+  const [historyOpen, setHistoryOpen] = useState<boolean>(false);
   const [shareUrl, setShareUrl] = useState<string>("");
   const [shareFallbackCompressed, setShareFallbackCompressed] = useState<string>("");
   const [exportType, setExportType] = useState<ExportType>("png");
@@ -90,6 +99,8 @@ export default function MermaidWorkbench() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(DIAGRAM_TEMPLATES[0].id);
   const [toast, setToast] = useState<ToastState>({ open: false, message: "", severity: "info" });
   const importFileRef = useRef<HTMLInputElement | null>(null);
+  const snapshotTimerRef = useRef<number | null>(null);
+  const lastAutoSnapshotCodeRef = useRef<string>(code);
 
   const { svg, error, isRendering, renderTimedOut, diagnostics, retryRender } = useMermaidPreview(code, theme);
   const { isDesktop, splitRatio, isDraggingSplit, splitContainerRef, startSplitDrag, setSplitRatio } = useSplitLayout(50);
@@ -108,6 +119,8 @@ export default function MermaidWorkbench() {
     graphBackgroundImageHeight,
     scale,
     splitRatio,
+    snapshots,
+    accessibilityMode,
     isReady,
     setCode,
     setDrafts,
@@ -122,6 +135,8 @@ export default function MermaidWorkbench() {
     setGraphBackgroundImageHeight,
     setScale,
     setSplitRatio,
+    setSnapshots,
+    setAccessibilityMode,
     setIsReady,
   });
 
@@ -130,6 +145,36 @@ export default function MermaidWorkbench() {
 
   const showToast = (message: string, severity: ToastState["severity"]) => {
     setToast({ open: true, message, severity });
+  };
+
+  const appendSnapshot = useCallback((snapshotCode: string, reason: SnapshotItem["reason"]) => {
+    const normalized = snapshotCode.trim();
+    if (!normalized) {
+      return;
+    }
+    setSnapshots((prev) => {
+      if (prev[0]?.code === snapshotCode) {
+        return prev;
+      }
+      const createdAt = Date.now();
+      const id = `snapshot-${createdAt}-${Math.random().toString(36).slice(2, 8)}`;
+      return [{ id, code: snapshotCode, createdAt, reason }, ...prev].slice(0, MAX_SNAPSHOTS);
+    });
+  }, []);
+
+  const handleCreateManualSnapshot = useCallback(() => {
+    appendSnapshot(code, "manual");
+    showToast("Snapshot created", "success");
+  }, [appendSnapshot, code]);
+
+  const handleRestoreSnapshot = (snapshotId: string) => {
+    const target = snapshots.find((item) => item.id === snapshotId);
+    if (!target) {
+      return;
+    }
+    setCode(target.code);
+    setHistoryOpen(false);
+    showToast("Snapshot restored", "success");
   };
 
   const handleSelectDraft = (draftId: string) => {
@@ -224,7 +269,8 @@ export default function MermaidWorkbench() {
 
   const exportImage = async (format: "png" | "jpg") => {
     if (!svg) return;
-    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const safeSvg = makeSvgExportCompatible(svg);
+    const svgBlob = new Blob([safeSvg], { type: "image/svg+xml;charset=utf-8" });
     const svgUrl = URL.createObjectURL(svgBlob);
     let image: HTMLImageElement;
     try {
@@ -252,7 +298,8 @@ export default function MermaidWorkbench() {
 
   const exportPdf = async () => {
     if (!svg) return;
-    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const safeSvg = makeSvgExportCompatible(svg);
+    const svgBlob = new Blob([safeSvg], { type: "image/svg+xml;charset=utf-8" });
     const svgUrl = URL.createObjectURL(svgBlob);
     let image: HTMLImageElement;
     try {
@@ -344,7 +391,12 @@ export default function MermaidWorkbench() {
   const handleThemeChange = (event: SelectChangeEvent<string>) => setTheme(event.target.value as MermaidTheme);
   const handleAppModeChange = (event: SelectChangeEvent<string>) => setAppMode(event.target.value as AppMode);
   const handleAppThemeChange = (event: SelectChangeEvent<string>) => setAppTheme(event.target.value as AppThemeName);
-  const uiTheme = useMemo(() => buildWorkbenchTheme(appTheme, appMode), [appMode, appTheme]);
+  const handleAccessibilityModeChange = (event: SelectChangeEvent<string>) =>
+    setAccessibilityMode(event.target.value as AccessibilityMode);
+  const uiTheme = useMemo(
+    () => buildWorkbenchTheme(appTheme, appMode, accessibilityMode),
+    [accessibilityMode, appMode, appTheme]
+  );
   const previewBackground = useMemo(
     () => getPreviewBackgroundCss(graphBackgroundStyle, graphBackgroundColor, appMode, graphBackgroundImage, graphBackgroundImageWidth, graphBackgroundImageHeight),
     [appMode, graphBackgroundColor, graphBackgroundStyle, graphBackgroundImage, graphBackgroundImageWidth, graphBackgroundImageHeight]
@@ -362,6 +414,32 @@ export default function MermaidWorkbench() {
       )
     );
   }, [activeDraftId, code, drafts]);
+
+  useEffect(() => {
+    lastAutoSnapshotCodeRef.current = code;
+  }, [activeDraftId]);
+
+  useEffect(() => {
+    if (!isReady || typeof window === "undefined") {
+      return;
+    }
+    if (snapshotTimerRef.current !== null) {
+      window.clearTimeout(snapshotTimerRef.current);
+    }
+    snapshotTimerRef.current = window.setTimeout(() => {
+      if (lastAutoSnapshotCodeRef.current === code) {
+        return;
+      }
+      appendSnapshot(code, "auto");
+      lastAutoSnapshotCodeRef.current = code;
+    }, AUTO_SNAPSHOT_DELAY_MS);
+
+    return () => {
+      if (snapshotTimerRef.current !== null) {
+        window.clearTimeout(snapshotTimerRef.current);
+      }
+    };
+  }, [appendSnapshot, code, isReady]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -385,6 +463,46 @@ export default function MermaidWorkbench() {
     window.addEventListener("hashchange", applySharedHash);
     return () => window.removeEventListener("hashchange", applySharedHash);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const isMod = event.ctrlKey || event.metaKey;
+      if (isMod && event.shiftKey && event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        setHistoryOpen(true);
+        return;
+      }
+      if (isMod && event.shiftKey && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        handleCreateManualSnapshot();
+        return;
+      }
+      if (isMod && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        setExportOpen(true);
+        return;
+      }
+      if (!isDesktop && event.altKey) {
+        if (event.key === "1") {
+          event.preventDefault();
+          setMobilePanelMode("split");
+        } else if (event.key === "2") {
+          event.preventDefault();
+          setMobilePanelMode("editor");
+        } else if (event.key === "3") {
+          event.preventDefault();
+          setMobilePanelMode("preview");
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleCreateManualSnapshot, isDesktop]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
@@ -428,6 +546,7 @@ export default function MermaidWorkbench() {
         onOpenGraph={() => setGraphOpen(true)}
         onOpenExport={() => setExportOpen(true)}
         onOpenTheme={() => setThemeOpen(true)}
+        onOpenHistory={() => setHistoryOpen(true)}
         onImportClick={() => importFileRef.current?.click()}
         onMobilePanelModeChange={setMobilePanelMode}
       />
@@ -500,6 +619,7 @@ export default function MermaidWorkbench() {
         theme={theme}
         appMode={appMode}
         appTheme={appTheme}
+        accessibilityMode={accessibilityMode}
         graphBackgroundStyle={graphBackgroundStyle}
         graphBackgroundColor={graphBackgroundColor}
         graphBackgroundImage={graphBackgroundImage}
@@ -509,6 +629,7 @@ export default function MermaidWorkbench() {
         onThemeChange={handleThemeChange}
         onAppModeChange={handleAppModeChange}
         onAppThemeChange={handleAppThemeChange}
+        onAccessibilityModeChange={handleAccessibilityModeChange}
         onGraphBackgroundStyleChange={(event) =>
           setGraphBackgroundStyle(event.target.value as GraphBackgroundStyle)
         }
@@ -516,6 +637,14 @@ export default function MermaidWorkbench() {
         onGraphBackgroundImageChange={setGraphBackgroundImage}
         onGraphBackgroundImageWidthChange={setGraphBackgroundImageWidth}
         onGraphBackgroundImageHeightChange={setGraphBackgroundImageHeight}
+      />
+
+      <SnapshotDialog
+        open={historyOpen}
+        snapshots={snapshots}
+        onClose={() => setHistoryOpen(false)}
+        onRestore={handleRestoreSnapshot}
+        onCreateManual={handleCreateManualSnapshot}
       />
 
       <ShareDialog

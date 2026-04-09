@@ -10,7 +10,13 @@ import {
   STORAGE_KEY,
 } from "@/components/workbench/constants";
 import { parseSharedCodeFromHash } from "@/components/workbench/shareUrl";
-import type { DraftItem, PersistParams, PersistedState } from "@/components/workbench/types";
+import type {
+  AccessibilityMode,
+  DraftItem,
+  PersistParams,
+  PersistedState,
+  SnapshotItem,
+} from "@/components/workbench/types";
 
 function isValidDraft(value: unknown): value is DraftItem {
   if (!value || typeof value !== "object") {
@@ -24,6 +30,20 @@ function isValidDraft(value: unknown): value is DraftItem {
     draft.name.length > 0 &&
     typeof draft.code === "string" &&
     typeof draft.updatedAt === "number"
+  );
+}
+
+function isValidSnapshot(value: unknown): value is SnapshotItem {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const snapshot = value as Partial<SnapshotItem>;
+  return (
+    typeof snapshot.id === "string" &&
+    snapshot.id.length > 0 &&
+    typeof snapshot.code === "string" &&
+    typeof snapshot.createdAt === "number" &&
+    (snapshot.reason === "auto" || snapshot.reason === "manual")
   );
 }
 
@@ -42,6 +62,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     graphBackgroundImageHeight,
     scale,
     splitRatio,
+    snapshots,
+    accessibilityMode,
     isReady,
     setCode,
     setDrafts,
@@ -56,6 +78,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     setGraphBackgroundImageHeight,
     setScale,
     setSplitRatio,
+    setSnapshots,
+    setAccessibilityMode,
     setIsReady,
   } = params;
 
@@ -153,6 +177,18 @@ export function useWorkbenchPersistence(params: PersistParams) {
         if (typeof parsed.splitRatio === "number") {
           setSplitRatio(parsed.splitRatio);
         }
+        if (Array.isArray(parsed.snapshots)) {
+          setSnapshots(parsed.snapshots.filter((item): item is SnapshotItem => isValidSnapshot(item)));
+        }
+        if (
+          parsed.accessibilityMode === "standard" ||
+          parsed.accessibilityMode === "enhanced" ||
+          parsed.accessibilityMode === "high-contrast"
+        ) {
+          setAccessibilityMode(parsed.accessibilityMode as AccessibilityMode);
+        } else {
+          setAccessibilityMode("standard");
+        }
       }
     } catch {
       // Ignore invalid local storage payload
@@ -180,6 +216,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
       graphBackgroundImageHeight,
       scale,
       splitRatio,
+      snapshots,
+      accessibilityMode,
     };
 
     const timeoutId = window.setTimeout(() => {
@@ -201,6 +239,8 @@ export function useWorkbenchPersistence(params: PersistParams) {
     isReady,
     scale,
     splitRatio,
+    snapshots,
     theme,
+    accessibilityMode,
   ]);
 }

@@ -25,6 +25,7 @@ export default function WorkbenchToolbar({
   onOpenGraph,
   onOpenExport,
   onOpenTheme,
+  onOpenHistory,
   onImportClick,
   onMobilePanelModeChange,
 }: WorkbenchToolbarProps) {
@@ -59,6 +60,9 @@ export default function WorkbenchToolbar({
           </Button>
           <Button size="small" variant="outlined" onClick={onOpenTheme}>
             Theme
+          </Button>
+          <Button size="small" variant="outlined" onClick={onOpenHistory}>
+            History
           </Button>
           <Button size="small" variant="contained" onClick={onOpenExport} disabled={!canExport}>
             Export

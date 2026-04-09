@@ -6,7 +6,9 @@ export type {
   AppMode,
   AppThemeName,
   GraphBackgroundStyle,
+  AccessibilityMode,
   DraftItem,
+  SnapshotItem,
   RenderDiagnostics,
   RenderSource,
 } from "./workbenchState";

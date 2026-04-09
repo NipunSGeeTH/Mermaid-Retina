@@ -14,6 +14,7 @@ export type WorkbenchToolbarProps = {
   onOpenGraph: () => void;
   onOpenExport: () => void;
   onOpenTheme: () => void;
+  onOpenHistory: () => void;
   onImportClick: () => void;
   onMobilePanelModeChange: (mode: MobilePanelMode) => void;
 };

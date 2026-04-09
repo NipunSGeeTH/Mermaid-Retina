@@ -17,13 +17,19 @@ import {
 import { MERMAID_THEMES, type MermaidTheme } from "@/lib/mermaidThemes";
 import { GRAPH_BACKGROUND_OPTIONS } from "@/components/workbench/graphBackground";
 import { APP_THEME_OPTIONS } from "@/components/workbench/themePresets";
-import type { AppMode, AppThemeName, GraphBackgroundStyle } from "@/components/workbench/types";
+import type {
+  AccessibilityMode,
+  AppMode,
+  AppThemeName,
+  GraphBackgroundStyle,
+} from "@/components/workbench/types";
 
 type ThemeDialogProps = {
   open: boolean;
   theme: MermaidTheme;
   appMode: AppMode;
   appTheme: AppThemeName;
+  accessibilityMode: AccessibilityMode;
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundColor: string;
   graphBackgroundImage?: string;
@@ -33,6 +39,7 @@ type ThemeDialogProps = {
   onThemeChange: (event: SelectChangeEvent<string>) => void;
   onAppModeChange: (event: SelectChangeEvent<string>) => void;
   onAppThemeChange: (event: SelectChangeEvent<string>) => void;
+  onAccessibilityModeChange: (event: SelectChangeEvent<string>) => void;
   onGraphBackgroundStyleChange: (event: SelectChangeEvent<string>) => void;
   onGraphBackgroundColorChange: (value: string) => void;
   onGraphBackgroundImageChange?: (imageData: string) => void;
@@ -45,6 +52,7 @@ export default function ThemeDialog({
   theme,
   appMode,
   appTheme,
+  accessibilityMode,
   graphBackgroundStyle,
   graphBackgroundColor,
   graphBackgroundImage,
@@ -54,6 +62,7 @@ export default function ThemeDialog({
   onThemeChange,
   onAppModeChange,
   onAppThemeChange,
+  onAccessibilityModeChange,
   onGraphBackgroundStyleChange,
   onGraphBackgroundColorChange,
   onGraphBackgroundImageChange,
@@ -119,6 +128,20 @@ export default function ThemeDialog({
                   {item.label}
                 </MenuItem>
               ))}
+            </Select>
+          </FormControl>
+
+          <FormControl size="small" fullWidth>
+            <InputLabel id="accessibility-mode-label">Accessibility</InputLabel>
+            <Select
+              labelId="accessibility-mode-label"
+              value={accessibilityMode}
+              label="Accessibility"
+              onChange={onAccessibilityModeChange}
+            >
+              <MenuItem value="standard">Standard</MenuItem>
+              <MenuItem value="enhanced">Enhanced (larger text)</MenuItem>
+              <MenuItem value="high-contrast">High Contrast + Keyboard Focus</MenuItem>
             </Select>
           </FormControl>
 
