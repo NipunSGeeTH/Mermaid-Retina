@@ -18,7 +18,7 @@ export default function Footer() {
       }}
     >
       <Typography variant="caption" sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.75 }}>
-        © {currentYear} NipunSGeeTH
+        © {currentYear}
         <Link
           href={githubUrl}
           target="_blank"

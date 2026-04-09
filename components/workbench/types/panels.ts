@@ -1,5 +1,5 @@
 import type { PointerEvent, RefObject } from "react";
-import type { GraphBackgroundStyle, RenderDiagnostics } from "./workbenchState";
+import type { GraphBackgroundStyle } from "./workbenchState";
 
 export type WorkbenchPanelsProps = {
   isDesktop: boolean;
@@ -12,7 +12,6 @@ export type WorkbenchPanelsProps = {
   svg: string;
   isRendering: boolean;
   renderTimedOut: boolean;
-  diagnostics: RenderDiagnostics;
   previewBackground: string;
   graphBackgroundStyle: GraphBackgroundStyle;
   graphBackgroundImageWidth: number;

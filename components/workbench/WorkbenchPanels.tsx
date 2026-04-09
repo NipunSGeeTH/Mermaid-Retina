@@ -28,7 +28,6 @@ export default function WorkbenchPanels({
   svg,
   isRendering,
   renderTimedOut,
-  diagnostics,
   previewBackground,
   graphBackgroundStyle,
   graphBackgroundImageWidth,
@@ -41,7 +40,6 @@ export default function WorkbenchPanels({
   const muiTheme = useTheme();
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [showFullScreenTopBar, setShowFullScreenTopBar] = useState(true);
-  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [viewport, setViewport] = useState({ x: 40, y: 40, zoom: 1 });
   const [isPanningPreview, setIsPanningPreview] = useState(false);
   const panOriginRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(
@@ -52,7 +50,7 @@ export default function WorkbenchPanels({
     []
   );
   const MIN_ZOOM = 0.2;
-  const MAX_ZOOM = 3;
+  const MAX_ZOOM = 5;
 
   const getBackgroundSize = () => {
     if (graphBackgroundStyle === "image") {
@@ -329,9 +327,6 @@ export default function WorkbenchPanels({
         >
           <Box sx={{ px: 1.5, py: 1, borderBottom: "1px solid", borderColor: "divider" }}>
             <Typography variant="subtitle2">Editor</Typography>
-            <Typography variant="caption" color="text.secondary">
-              Mermaid syntax with autosave. Use Tab for indent.
-            </Typography>
           </Box>
           <Box
             sx={{
@@ -339,8 +334,17 @@ export default function WorkbenchPanels({
               minHeight: 0,
               backgroundColor: "background.paper",
               overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+              "& [class*='cm-theme-']": {
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+              },
               "& .cm-editor": {
                 height: "100%",
+                minHeight: 0,
                 outline: "none",
                 backgroundColor: "background.paper",
                 color: "text.primary",
@@ -352,7 +356,9 @@ export default function WorkbenchPanels({
                 borderLeftColor: "primary.main",
               },
               "& .cm-scroller": {
+                height: "100%",
                 overflow: "auto",
+                overscrollBehavior: "contain",
                 lineHeight: 1.7,
               },
               "& .cm-content": {
@@ -431,13 +437,6 @@ export default function WorkbenchPanels({
             <Stack direction="row" justifyContent="space-between" alignItems="center" gap={1}>
               <Box>
                 <Typography variant="subtitle2">Preview</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {isRendering
-                    ? "Rendering graph..."
-                    : isDesktop
-                      ? "Real-time render. Drag to pan and scroll to zoom in/out."
-                      : "Real-time render. Auto-fit enabled for mobile preview."}
-                </Typography>
               </Box>
               <Stack direction="row" spacing={1}>
                 {renderTimedOut ? (
@@ -445,9 +444,6 @@ export default function WorkbenchPanels({
                     Retry
                   </Button>
                 ) : null}
-                <Button size="small" variant="outlined" onClick={() => setDiagnosticsOpen(true)}>
-                  Diagnostics
-                </Button>
                 <Button size="small" variant="outlined" onClick={resetPreviewViewport}>
                   Reset View
                 </Button>
@@ -499,41 +495,6 @@ export default function WorkbenchPanels({
         </Box>
       </Dialog>
 
-      <Dialog open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} fullWidth maxWidth="sm">
-        <DialogContent sx={{ py: 2 }}>
-          <Stack spacing={1}>
-            <Typography variant="h6">Render Diagnostics</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Source: {diagnostics.source}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Duration: {diagnostics.durationMs === null ? "n/a" : `${diagnostics.durationMs} ms`}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Cache Hit: {diagnostics.cacheHit ? "yes" : "no"}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Cache Entries: {diagnostics.cacheEntries}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Timed Out: {diagnostics.timedOut ? "yes" : "no"}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Last Rendered: {diagnostics.lastRenderedAt || "n/a"}
-            </Typography>
-            {diagnostics.lastError ? (
-              <Alert severity="warning" sx={{ mt: 1 }}>
-                {diagnostics.lastError}
-              </Alert>
-            ) : null}
-            <Stack direction="row" justifyContent="flex-end" sx={{ pt: 0.5 }}>
-              <Button size="small" variant="outlined" onClick={onRetryRender}>
-                Retry Render
-              </Button>
-            </Stack>
-          </Stack>
-        </DialogContent>
-      </Dialog>
     </Box>
   );
 }

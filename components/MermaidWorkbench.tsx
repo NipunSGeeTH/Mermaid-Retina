@@ -102,7 +102,7 @@ export default function MermaidWorkbench() {
   const snapshotTimerRef = useRef<number | null>(null);
   const lastAutoSnapshotCodeRef = useRef<string>(code);
 
-  const { svg, error, isRendering, renderTimedOut, diagnostics, retryRender } = useMermaidPreview(code, theme);
+  const { svg, error, isRendering, renderTimedOut, retryRender } = useMermaidPreview(code, theme);
   const { isDesktop, splitRatio, isDraggingSplit, splitContainerRef, startSplitDrag, setSplitRatio } = useSplitLayout(50);
 
   useWorkbenchPersistence({
@@ -563,7 +563,6 @@ export default function MermaidWorkbench() {
           svg={svg}
           isRendering={isRendering}
           renderTimedOut={renderTimedOut}
-          diagnostics={diagnostics}
           previewBackground={previewBackground}
           graphBackgroundStyle={graphBackgroundStyle}
           graphBackgroundImageWidth={graphBackgroundImageWidth}
