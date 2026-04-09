@@ -44,3 +44,15 @@ export type DraftItem = {
 export type MobilePanelMode = "split" | "editor" | "preview";
 
 export type ExportType = "png" | "jpg" | "pdf" | "svg" | "mmd";
+
+export type RenderSource = "cache-memory" | "cache-storage" | "worker" | "main-thread" | "none";
+
+export type RenderDiagnostics = {
+  source: RenderSource;
+  durationMs: number | null;
+  cacheHit: boolean;
+  cacheEntries: number;
+  timedOut: boolean;
+  lastError: string;
+  lastRenderedAt: string;
+};

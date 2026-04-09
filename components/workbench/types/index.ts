@@ -7,6 +7,8 @@ export type {
   AppThemeName,
   GraphBackgroundStyle,
   DraftItem,
+  RenderDiagnostics,
+  RenderSource,
 } from "./workbenchState";
 export type { WorkbenchToolbarProps } from "./toolbar";
 export type { WorkbenchPanelsProps } from "./panels";

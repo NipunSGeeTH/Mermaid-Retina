@@ -27,17 +27,21 @@ export default function WorkbenchPanels({
   error,
   svg,
   isRendering,
+  renderTimedOut,
+  diagnostics,
   previewBackground,
   graphBackgroundStyle,
   graphBackgroundImageWidth,
   graphBackgroundImageHeight,
   splitContainerRef,
   onCodeChange,
+  onRetryRender,
   onStartSplitDrag,
 }: WorkbenchPanelsProps) {
   const muiTheme = useTheme();
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [showFullScreenTopBar, setShowFullScreenTopBar] = useState(true);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const [viewport, setViewport] = useState({ x: 40, y: 40, zoom: 1 });
   const [isPanningPreview, setIsPanningPreview] = useState(false);
   const panOriginRef = useRef<{ pointerId: number; offsetX: number; offsetY: number } | null>(
@@ -175,6 +179,11 @@ export default function WorkbenchPanels({
       <Alert severity="error" sx={{ width: "100%", whiteSpace: "pre-wrap" }}>
         {error}
       </Alert>
+      {renderTimedOut ? (
+        <Button variant="outlined" size="small" sx={{ mt: 1.5 }} onClick={onRetryRender}>
+          Retry Render
+        </Button>
+      ) : null}
     </Box>
   ) : !svg.trim() ? (
     <Box
@@ -208,9 +217,16 @@ export default function WorkbenchPanels({
             </Typography>
           </Stack>
         ) : (
-          <Typography variant="body2" color="text.secondary">
-            Enter Mermaid code to preview your graph.
-          </Typography>
+          <Stack spacing={1} alignItems="center">
+            <Typography variant="body2" color="text.secondary">
+              Enter Mermaid code to preview your graph.
+            </Typography>
+            {renderTimedOut ? (
+              <Button size="small" variant="outlined" onClick={onRetryRender}>
+                Retry Render
+              </Button>
+            ) : null}
+          </Stack>
         )}
       </Paper>
     </Box>
@@ -418,10 +434,20 @@ export default function WorkbenchPanels({
                 <Typography variant="caption" color="text.secondary">
                   {isRendering
                     ? "Rendering graph..."
-                    : "Real-time render. Drag to pan and scroll to zoom in/out."}
+                    : isDesktop
+                      ? "Real-time render. Drag to pan and scroll to zoom in/out."
+                      : "Real-time render. Auto-fit enabled for mobile preview."}
                 </Typography>
               </Box>
               <Stack direction="row" spacing={1}>
+                {renderTimedOut ? (
+                  <Button size="small" variant="contained" color="warning" onClick={onRetryRender}>
+                    Retry
+                  </Button>
+                ) : null}
+                <Button size="small" variant="outlined" onClick={() => setDiagnosticsOpen(true)}>
+                  Diagnostics
+                </Button>
                 <Button size="small" variant="outlined" onClick={resetPreviewViewport}>
                   Reset View
                 </Button>
@@ -471,6 +497,42 @@ export default function WorkbenchPanels({
 
           <DialogContent sx={{ p: 0, height: "100%" }}>{previewViewportContent}</DialogContent>
         </Box>
+      </Dialog>
+
+      <Dialog open={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} fullWidth maxWidth="sm">
+        <DialogContent sx={{ py: 2 }}>
+          <Stack spacing={1}>
+            <Typography variant="h6">Render Diagnostics</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Source: {diagnostics.source}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Duration: {diagnostics.durationMs === null ? "n/a" : `${diagnostics.durationMs} ms`}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Cache Hit: {diagnostics.cacheHit ? "yes" : "no"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Cache Entries: {diagnostics.cacheEntries}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Timed Out: {diagnostics.timedOut ? "yes" : "no"}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Last Rendered: {diagnostics.lastRenderedAt || "n/a"}
+            </Typography>
+            {diagnostics.lastError ? (
+              <Alert severity="warning" sx={{ mt: 1 }}>
+                {diagnostics.lastError}
+              </Alert>
+            ) : null}
+            <Stack direction="row" justifyContent="flex-end" sx={{ pt: 0.5 }}>
+              <Button size="small" variant="outlined" onClick={onRetryRender}>
+                Retry Render
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
       </Dialog>
     </Box>
   );

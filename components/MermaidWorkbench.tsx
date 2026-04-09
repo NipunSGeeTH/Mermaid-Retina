@@ -8,7 +8,7 @@ import {
   type ChangeEvent,
   type PointerEvent,
 } from "react";
-import { Alert, Box, Snackbar, ThemeProvider, type SelectChangeEvent } from "@mui/material";
+import { Alert, Box, Paper, Skeleton, Snackbar, ThemeProvider, type SelectChangeEvent } from "@mui/material";
 import { DIAGRAM_TEMPLATES } from "@/lib/diagramTemplates";
 import { type MermaidTheme } from "@/lib/mermaidThemes";
 import {
@@ -27,7 +27,12 @@ import { applyCanvasBackground, getPreviewBackgroundCss } from "@/components/wor
 import { useMermaidPreview } from "@/components/workbench/useMermaidPreview";
 import { useSplitLayout } from "@/components/workbench/useSplitLayout";
 import { useWorkbenchPersistence } from "@/components/workbench/useWorkbenchPersistence";
-import { buildShareHash, parseSharedCodeFromHash } from "@/components/workbench/shareUrl";
+import {
+  buildShareHash,
+  decodeCompressedDiagramFromFile,
+  encodeCompressedDiagramForFile,
+  parseSharedCodeFromHash,
+} from "@/components/workbench/shareUrl";
 import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
 import {
   canvasToBlob,
@@ -52,6 +57,7 @@ function createDraft(name: string, code: string): DraftItem {
 }
 
 const INITIAL_DRAFT = createDraft("Draft 1", DIAGRAM_TEMPLATES[0].code);
+const MAX_SHARE_URL_LENGTH = 3500;
 
 export default function MermaidWorkbench() {
   const [code, setCode] = useState<string>(DIAGRAM_TEMPLATES[0].code);
@@ -77,6 +83,7 @@ export default function MermaidWorkbench() {
   const [themeOpen, setThemeOpen] = useState<boolean>(false);
   const [shareOpen, setShareOpen] = useState<boolean>(false);
   const [shareUrl, setShareUrl] = useState<string>("");
+  const [shareFallbackCompressed, setShareFallbackCompressed] = useState<string>("");
   const [exportType, setExportType] = useState<ExportType>("png");
   const [exportTransparent, setExportTransparent] = useState<boolean>(false);
   const [pdfSize, setPdfSize] = useState<string>("a4");
@@ -84,7 +91,7 @@ export default function MermaidWorkbench() {
   const [toast, setToast] = useState<ToastState>({ open: false, message: "", severity: "info" });
   const importFileRef = useRef<HTMLInputElement | null>(null);
 
-  const { svg, error, isRendering } = useMermaidPreview(code, theme);
+  const { svg, error, isRendering, renderTimedOut, diagnostics, retryRender } = useMermaidPreview(code, theme);
   const { isDesktop, splitRatio, isDraggingSplit, splitContainerRef, startSplitDrag, setSplitRatio } = useSplitLayout(50);
 
   useWorkbenchPersistence({
@@ -179,6 +186,15 @@ export default function MermaidWorkbench() {
 
     const relativeUrl = `${window.location.pathname}${window.location.search}#${shareHash}`;
     const absoluteUrl = `${window.location.origin}${relativeUrl}`;
+    if (absoluteUrl.length > MAX_SHARE_URL_LENGTH) {
+      setShareUrl("");
+      setShareFallbackCompressed(encodeCompressedDiagramForFile(code));
+      setShareOpen(true);
+      showToast("Diagram too large for URL share. Use compressed file.", "info");
+      return;
+    }
+
+    setShareFallbackCompressed("");
     setShareUrl(absoluteUrl);
     setShareOpen(true);
   };
@@ -193,6 +209,17 @@ export default function MermaidWorkbench() {
     } catch {
       showToast("Copy failed", "error");
     }
+  };
+
+  const handleDownloadCompressedShare = () => {
+    if (!shareFallbackCompressed) {
+      return;
+    }
+    triggerDownload(
+      new Blob([shareFallbackCompressed], { type: "text/plain;charset=utf-8" }),
+      "diagram.mmdz"
+    );
+    showToast("Compressed share file downloaded", "success");
   };
 
   const exportImage = async (format: "png" | "jpg") => {
@@ -292,7 +319,18 @@ export default function MermaidWorkbench() {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      setCode(await file.text());
+      const text = await file.text();
+      const isCompressedFile = file.name.toLowerCase().endsWith(".mmdz");
+      if (isCompressedFile) {
+        const decompressed = decodeCompressedDiagramFromFile(text);
+        if (!decompressed) {
+          showToast("Compressed import is invalid", "error");
+          return;
+        }
+        setCode(decompressed);
+      } else {
+        setCode(text);
+      }
       showToast("Source imported", "success");
     } catch {
       showToast("Import failed", "error");
@@ -348,9 +386,35 @@ export default function MermaidWorkbench() {
     return () => window.removeEventListener("hashchange", applySharedHash);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+      return;
+    }
+    navigator.serviceWorker.register("./sw.js").catch(() => {
+      // Service worker registration is optional.
+    });
+  }, []);
+
+  const showStartupSkeleton = !isReady;
+
   return (
     <ThemeProvider theme={uiTheme}>
       <Box sx={{ p: { xs: 1.25, md: 2.5 }, height: "100vh", display: "flex", flexDirection: "column", bgcolor: "background.default", color: "text.primary" }}>
+      {showStartupSkeleton ? (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, flex: 1 }}>
+          <Paper elevation={0} sx={{ border: "1px solid", borderColor: "divider", p: 1 }}>
+            <Skeleton variant="text" width={180} height={36} />
+            <Skeleton variant="rounded" height={34} />
+          </Paper>
+          <Paper
+            elevation={0}
+            sx={{ border: "1px solid", borderColor: "divider", p: 1.5, flex: 1, minHeight: 0 }}
+          >
+            <Skeleton variant="rounded" height="100%" />
+          </Paper>
+        </Box>
+      ) : (
+        <>
       <WorkbenchToolbar
         isDesktop={isDesktop}
         mobilePanelMode={mobilePanelMode}
@@ -379,17 +443,20 @@ export default function MermaidWorkbench() {
           error={error}
           svg={svg}
           isRendering={isRendering}
+          renderTimedOut={renderTimedOut}
+          diagnostics={diagnostics}
           previewBackground={previewBackground}
           graphBackgroundStyle={graphBackgroundStyle}
           graphBackgroundImageWidth={graphBackgroundImageWidth}
           graphBackgroundImageHeight={graphBackgroundImageHeight}
           splitContainerRef={splitContainerRef}
           onCodeChange={setCode}
+          onRetryRender={retryRender}
           onStartSplitDrag={handleStartSplitDrag}
         />
       </Box>
 
-      <input ref={importFileRef} type="file" accept=".mmd,.mermaid,.txt" hidden onChange={handleImportSource} />
+      <input ref={importFileRef} type="file" accept=".mmd,.mermaid,.txt,.mmdz" hidden onChange={handleImportSource} />
 
       <GraphTypeDialog
         open={graphOpen}
@@ -454,8 +521,13 @@ export default function MermaidWorkbench() {
       <ShareDialog
         open={shareOpen}
         shareUrl={shareUrl}
-        onClose={() => setShareOpen(false)}
+        isLongShareFallback={Boolean(shareFallbackCompressed) && !shareUrl}
+        onClose={() => {
+          setShareOpen(false);
+          setShareFallbackCompressed("");
+        }}
         onCopy={handleCopyShareLink}
+        onDownloadCompressed={handleDownloadCompressedShare}
       />
 
       <Footer />
@@ -465,6 +537,8 @@ export default function MermaidWorkbench() {
           {toast.message}
         </Alert>
       </Snackbar>
+      </>
+      )}
       </Box>
     </ThemeProvider>
   );

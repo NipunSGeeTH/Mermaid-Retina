@@ -1,4 +1,9 @@
-import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from "lz-string";
+import {
+  compressToBase64,
+  compressToEncodedURIComponent,
+  decompressFromBase64,
+  decompressFromEncodedURIComponent,
+} from "lz-string";
 
 const SHARE_HASH_KEY = "view";
 const LAUNCH_HASH_KEY = "code";
@@ -45,4 +50,16 @@ export function parseSharedCodeFromHash(hash: string): SharedHashParseResult {
   }
 
   return { hasShareCode: true, code: launchedCode };
+}
+
+export function encodeCompressedDiagramForFile(code: string): string {
+  return compressToBase64(code);
+}
+
+export function decodeCompressedDiagramFromFile(payload: string): string | null {
+  if (!payload.trim()) {
+    return null;
+  }
+  const decoded = decompressFromBase64(payload.trim());
+  return typeof decoded === "string" ? decoded : null;
 }
