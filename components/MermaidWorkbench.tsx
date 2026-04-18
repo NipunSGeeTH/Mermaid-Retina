@@ -38,7 +38,8 @@ import {
 import { buildWorkbenchTheme } from "@/components/workbench/themePresets";
 import {
   canvasToBlob,
-  loadSvgImage,
+  drawSvgOnCanvas,
+  getSvgDimensions,
   makeSvgExportCompatible,
   triggerDownload,
 } from "@/components/workbench/utils";
@@ -64,6 +65,17 @@ const INITIAL_DRAFT = createDraft("Draft 1", DIAGRAM_TEMPLATES[0].code);
 const MAX_SHARE_URL_LENGTH = 3500;
 const MAX_SNAPSHOTS = 40;
 const AUTO_SNAPSHOT_DELAY_MS = 12000;
+const MAX_CANVAS_DIMENSION = 8192;
+const MAX_CANVAS_AREA = 67_108_864;
+
+function getSafeExportScale(width: number, height: number, requestedScale: number): number {
+  const baseWidth = Math.max(1, width);
+  const baseHeight = Math.max(1, height);
+  const byDimension = Math.min(MAX_CANVAS_DIMENSION / baseWidth, MAX_CANVAS_DIMENSION / baseHeight);
+  const byArea = Math.sqrt(MAX_CANVAS_AREA / (baseWidth * baseHeight));
+  const safeScale = Math.min(requestedScale, byDimension, byArea);
+  return Number.isFinite(safeScale) && safeScale > 0 ? safeScale : 1;
+}
 
 export default function MermaidWorkbench() {
   const [code, setCode] = useState<string>(DIAGRAM_TEMPLATES[0].code);
@@ -270,56 +282,150 @@ export default function MermaidWorkbench() {
   const exportImage = async (format: "png" | "jpg") => {
     if (!svg) return;
     const safeSvg = makeSvgExportCompatible(svg);
-    const svgBlob = new Blob([safeSvg], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    let image: HTMLImageElement;
+    let svgToUse = safeSvg;
+    let dimensions: { width: number; height: number };
     try {
-      image = await loadSvgImage(svgUrl);
-    } finally {
-      URL.revokeObjectURL(svgUrl);
+      dimensions = await getSvgDimensions(safeSvg);
+    } catch {
+      svgToUse = svg;
+      dimensions = await getSvgDimensions(svg);
     }
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(image.width * scale));
-    canvas.height = Math.max(1, Math.round(image.height * scale));
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("Canvas context unavailable");
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    const effectiveScale = getSafeExportScale(dimensions.width, dimensions.height, scale);
+    if (effectiveScale < scale) {
+      showToast(
+        `Requested ${scale}x exceeds browser canvas limit. Exported at ${effectiveScale.toFixed(2)}x.`,
+        "info"
+      );
+    }
     const mustOpaque = format === "jpg";
-    const shouldDrawBackground = mustOpaque || !exportTransparent;
-    if (shouldDrawBackground) {
-      const style = mustOpaque && graphBackgroundStyle === "transparent" ? "solid" : graphBackgroundStyle;
-      const color = mustOpaque && graphBackgroundStyle === "transparent" ? "#ffffff" : graphBackgroundColor;
-      await applyCanvasBackground(context, canvas.width, canvas.height, style, color, appMode, graphBackgroundImage, graphBackgroundImageWidth, graphBackgroundImageHeight);
+    const renderImageCanvas = async (skipImageBackground: boolean) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(dimensions.width * effectiveScale));
+      canvas.height = Math.max(1, Math.round(dimensions.height * effectiveScale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Canvas context unavailable");
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      const shouldDrawBackground = mustOpaque || !exportTransparent;
+      if (shouldDrawBackground) {
+        const style = mustOpaque && graphBackgroundStyle === "transparent" ? "solid" : graphBackgroundStyle;
+        const color = mustOpaque && graphBackgroundStyle === "transparent" ? "#ffffff" : graphBackgroundColor;
+        const bgCanvas = document.createElement("canvas");
+        bgCanvas.width = canvas.width;
+        bgCanvas.height = canvas.height;
+        const bgContext = bgCanvas.getContext("2d");
+        if (!bgContext) throw new Error("Canvas background context unavailable");
+        await applyCanvasBackground(
+          bgContext,
+          bgCanvas.width,
+          bgCanvas.height,
+          skipImageBackground && style === "image" ? "solid" : style,
+          color,
+          appMode,
+          graphBackgroundImage,
+          graphBackgroundImageWidth,
+          graphBackgroundImageHeight
+        );
+        try {
+          context.drawImage(bgCanvas, 0, 0, canvas.width, canvas.height);
+        } catch {
+          // Ignore background composition failure; keep diagram export functional.
+        }
+      }
+      const svgCanvas = document.createElement("canvas");
+      svgCanvas.width = canvas.width;
+      svgCanvas.height = canvas.height;
+      const svgContext = svgCanvas.getContext("2d");
+      if (!svgContext) throw new Error("Canvas svg context unavailable");
+      await drawSvgOnCanvas(svgContext, svgToUse, svgCanvas.width, svgCanvas.height);
+      context.drawImage(svgCanvas, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    };
+
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await renderImageCanvas(false);
+    } catch (error) {
+      if (!(error instanceof DOMException) || error.name !== "InvalidStateError") {
+        throw error;
+      }
+      svgToUse = svg;
+      dimensions = await getSvgDimensions(svg);
+      canvas = await renderImageCanvas(true);
+      showToast("Retried export without image background due to browser canvas error", "info");
     }
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const blob = await canvasToBlob(canvas, format === "jpg" ? "image/jpeg" : "image/png", 0.92);
-    triggerDownload(blob, `diagram-${scale}x.${format}`);
+    triggerDownload(blob, `diagram-${effectiveScale.toFixed(2)}x.${format}`);
   };
 
   const exportPdf = async () => {
     if (!svg) return;
     const safeSvg = makeSvgExportCompatible(svg);
-    const svgBlob = new Blob([safeSvg], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    let image: HTMLImageElement;
+    let svgToUse = safeSvg;
+    let dimensions: { width: number; height: number };
     try {
-      image = await loadSvgImage(svgUrl);
-    } finally {
-      URL.revokeObjectURL(svgUrl);
+      dimensions = await getSvgDimensions(safeSvg);
+    } catch {
+      svgToUse = svg;
+      dimensions = await getSvgDimensions(svg);
     }
+    const effectiveScale = getSafeExportScale(dimensions.width, dimensions.height, scale);
+    if (effectiveScale < scale) {
+      showToast(
+        `Requested ${scale}x exceeds browser canvas limit. PDF rendered at ${effectiveScale.toFixed(2)}x.`,
+        "info"
+      );
+    }
+    const renderPdfCanvas = async (skipImageBackground: boolean) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(dimensions.width * effectiveScale));
+      canvas.height = Math.max(1, Math.round(dimensions.height * effectiveScale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas context unavailable");
+      const style = graphBackgroundStyle === "transparent" ? "solid" : graphBackgroundStyle;
+      const color = graphBackgroundStyle === "transparent" ? "#ffffff" : graphBackgroundColor;
+      const bgCanvas = document.createElement("canvas");
+      bgCanvas.width = canvas.width;
+      bgCanvas.height = canvas.height;
+      const bgContext = bgCanvas.getContext("2d");
+      if (!bgContext) throw new Error("Canvas background context unavailable");
+      await applyCanvasBackground(
+        bgContext,
+        bgCanvas.width,
+        bgCanvas.height,
+        skipImageBackground && style === "image" ? "solid" : style,
+        color,
+        appMode,
+        graphBackgroundImage,
+        graphBackgroundImageWidth,
+        graphBackgroundImageHeight
+      );
+      try {
+        ctx.drawImage(bgCanvas, 0, 0, canvas.width, canvas.height);
+      } catch {
+        // Ignore background composition failure; keep PDF export functional.
+      }
+      const svgCanvas = document.createElement("canvas");
+      svgCanvas.width = canvas.width;
+      svgCanvas.height = canvas.height;
+      const svgContext = svgCanvas.getContext("2d");
+      if (!svgContext) throw new Error("Canvas svg context unavailable");
+      await drawSvgOnCanvas(svgContext, svgToUse, svgCanvas.width, svgCanvas.height);
+      ctx.drawImage(svgCanvas, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    };
 
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(image.width * scale));
-    canvas.height = Math.max(1, Math.round(image.height * scale));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas context unavailable");
-    
-    // Apply background with support for images
-    const style = graphBackgroundStyle === "transparent" ? "solid" : graphBackgroundStyle;
-    const color = graphBackgroundStyle === "transparent" ? "#ffffff" : graphBackgroundColor;
-    await applyCanvasBackground(ctx, canvas.width, canvas.height, style, color, appMode, graphBackgroundImage, graphBackgroundImageWidth, graphBackgroundImageHeight);
-    
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await renderPdfCanvas(false);
+    } catch (error) {
+      if (!(error instanceof DOMException) || error.name !== "InvalidStateError") {
+        throw error;
+      }
+      svgToUse = svg;
+      dimensions = await getSvgDimensions(svg);
+      canvas = await renderPdfCanvas(true);
+      showToast("Retried PDF export without image background due to browser canvas error", "info");
+    }
 
     const imageData = canvas.toDataURL("image/jpeg", 0.95);
     const orientation = canvas.width >= canvas.height ? "landscape" : "portrait";
@@ -358,7 +464,11 @@ export default function MermaidWorkbench() {
       showToast("Export complete", "success");
     } catch (exportError) {
       console.error("Export failed", exportError);
-      showToast("Export failed", "error");
+      const message =
+        exportError instanceof Error && exportError.message
+          ? `Export failed: ${exportError.message}`
+          : "Export failed";
+      showToast(message, "error");
     }
   };
 

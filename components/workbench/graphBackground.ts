@@ -61,7 +61,11 @@ export function applyCanvasBackground(
       img.onload = () => {
         const finalWidth = imageWidth || width;
         const finalHeight = imageHeight || height;
-        ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+        try {
+          ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+        } catch {
+          // Ignore invalid image state and continue export without image background.
+        }
         resolve();
       };
       img.onerror = () => {
@@ -129,4 +133,3 @@ export function applyCanvasBackground(
     resolve();
   });
 }
-
