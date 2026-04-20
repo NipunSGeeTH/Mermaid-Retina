@@ -1,6 +1,8 @@
-# Mermaid World
+# Mermaid Retina
 
-Mermaid World is a web-based Mermaid editor built with Next.js for writing, previewing, sharing, and exporting diagrams.
+Mermaid Retina is a web-based Mermaid editor built with Next.js for writing, previewing, sharing, and exporting diagrams.
+
+**[🚀 Try Demo](https://mermaid.nipunsgeeth.top/)**
 
 ## Features
 
@@ -40,13 +42,13 @@ Open:
 Build the development image:
 
 ```bash
-docker build --target dev -t mermaid-world:dev .
+docker build --target dev -t mermaid-retina:dev .
 ```
 
 Run it with your project mounted:
 
 ```bash
-docker run --rm -it -p 3000:3000 -v "$(pwd)":/app -v /app/node_modules mermaid-world:dev
+docker run --rm -it -p 3000:3000 -v "$(pwd)":/app -v /app/node_modules mermaid-retina:dev
 ```
 
 Open:
@@ -58,13 +60,13 @@ Open:
 Build the static image:
 
 ```bash
-docker build --target static -t mermaid-world:static .
+docker build --target static -t mermaid-retina:static .
 ```
 
 Run it:
 
 ```bash
-docker run --rm -p 8080:80 mermaid-world:static
+docker run --rm -p 8080:80 mermaid-retina:static
 ```
 
 Open:
