@@ -65,8 +65,6 @@ export default function WorkbenchPanels({
         width: "max-content",
         "& svg": {
           display: "block",
-          width: "auto",
-          height: "auto",
           maxWidth: "none",
           maxHeight: "none",
         },

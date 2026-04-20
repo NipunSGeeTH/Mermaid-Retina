@@ -39,6 +39,63 @@ const STORAGE_KEY = "mermaid-render-cache-v1";
 const WORKER_MODULE_URL =
   "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
 
+function stabilizeSvgForPreview(rawSvg: string): string {
+  const svg = rawSvg.trim();
+  if (!svg) return rawSvg;
+
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(svg, "image/svg+xml");
+    if (doc.querySelector("parsererror")) {
+      return rawSvg;
+    }
+
+    const root = doc.documentElement;
+    if (root.nodeName.toLowerCase() !== "svg") {
+      return rawSvg;
+    }
+
+    const viewBox = root.getAttribute("viewBox");
+    if (!viewBox) {
+      return rawSvg;
+    }
+
+    const values = viewBox
+      .trim()
+      .split(/[\s,]+/)
+      .map((part) => Number.parseFloat(part));
+    if (values.length !== 4 || !Number.isFinite(values[2]) || !Number.isFinite(values[3])) {
+      return rawSvg;
+    }
+
+    const width = values[2];
+    const height = values[3];
+    if (width <= 0 || height <= 0) {
+      return rawSvg;
+    }
+
+    const widthAttr = (root.getAttribute("width") || "").trim();
+    const heightAttr = (root.getAttribute("height") || "").trim();
+    const needsWidth = !widthAttr || widthAttr.endsWith("%");
+    const needsHeight = !heightAttr || heightAttr.endsWith("%");
+
+    if (!needsWidth && !needsHeight) {
+      return rawSvg;
+    }
+
+    if (needsWidth) {
+      root.setAttribute("width", String(width));
+    }
+    if (needsHeight) {
+      root.setAttribute("height", String(height));
+    }
+
+    return new XMLSerializer().serializeToString(root);
+  } catch {
+    return rawSvg;
+  }
+}
+
 function createRenderWorker(): Worker {
   const workerScript = `
 let mermaidModulePromise = null;
@@ -246,7 +303,14 @@ export function useMermaidPreview(code: string, theme: MermaidTheme): MermaidPre
 
     const cached = renderCacheRef.current.get(cacheKey);
     if (cached) {
-      setSvg(cached.svg);
+      const stableCachedSvg = stabilizeSvgForPreview(cached.svg);
+      if (stableCachedSvg !== cached.svg) {
+        renderCacheRef.current.set(cacheKey, {
+          ...cached,
+          svg: stableCachedSvg,
+        });
+      }
+      setSvg(stableCachedSvg);
       setError("");
       setIsRendering(false);
       setRenderTimedOut(false);
@@ -283,9 +347,10 @@ export function useMermaidPreview(code: string, theme: MermaidTheme): MermaidPre
           const durationMs = Math.max(0, Math.round(performance.now() - startedAt));
 
           if (payload.ok && payload.renderedSvg) {
+            const stableSvg = stabilizeSvgForPreview(payload.renderedSvg);
             const renderedAt = new Date().toLocaleTimeString();
             const next: CachedRender = {
-              svg: payload.renderedSvg,
+              svg: stableSvg,
               renderedAt,
               durationMs,
             };
@@ -294,7 +359,7 @@ export function useMermaidPreview(code: string, theme: MermaidTheme): MermaidPre
             trimCache(renderCacheRef.current);
             saveCacheToStorage(renderCacheRef.current);
 
-            setSvg(payload.renderedSvg);
+            setSvg(stableSvg);
             setError("");
             setLastRenderedAt(renderedAt);
             setRenderTimedOut(false);
