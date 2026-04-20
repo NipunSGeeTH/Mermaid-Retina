@@ -33,6 +33,45 @@ Open:
 
 - `http://localhost:3000`
 
+## Docker
+
+### Development (with hot reload)
+
+Build the development image:
+
+```bash
+docker build --target dev -t mermaid-world:dev .
+```
+
+Run it with your project mounted:
+
+```bash
+docker run --rm -it -p 3000:3000 -v "$(pwd)":/app -v /app/node_modules mermaid-world:dev
+```
+
+Open:
+
+- `http://localhost:3000`
+
+### Production (static export via Nginx)
+
+Build the static image:
+
+```bash
+docker build --target static -t mermaid-world:static .
+```
+
+Run it:
+
+```bash
+docker run --rm -p 8080:80 mermaid-world:static
+```
+
+Open:
+
+- `http://localhost:8080/Mermaid-Retina/`
+- `http://localhost:8080/mermaid-retina/`
+
 ## Available Scripts
 
 - `npm run dev` - Start local development server
