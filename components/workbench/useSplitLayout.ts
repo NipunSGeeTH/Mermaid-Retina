@@ -22,7 +22,9 @@ export function useSplitLayout(initialRatio = 50): SplitLayoutState {
     if (typeof window === "undefined") {
       return;
     }
-    const updateViewport = () => setIsDesktop(window.innerWidth >= 1200);
+    // Treat tablets (including iPad Mini portrait) as "desktop layout"
+    // so users get side-by-side editor/preview with draggable divider.
+    const updateViewport = () => setIsDesktop(window.innerWidth >= 740);
     updateViewport();
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
@@ -76,4 +78,3 @@ export function useSplitLayout(initialRatio = 50): SplitLayoutState {
     setSplitRatio,
   };
 }
-
